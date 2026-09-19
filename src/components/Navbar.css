@@ -1,0 +1,120 @@
+/* NAVBAR: fixed premium bar — transparent glass initially; soft ivory + subtle
+   shadow once scrolled. Ivory/white typography over the hero, maroon ink after. */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 3rem;
+  /* Transparent initially with a faint glass blur (per spec) */
+  background: transparent;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1), padding 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* NAVBAR: scrolled state — soft ivory surface with a subtle shadow */
+.navbar--scrolled {
+  background: rgba(241, 230, 216, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 6px 24px rgba(92, 10, 30, 0.1);
+  padding: 0.7rem 3rem;
+}
+
+/* NAVBAR: logo left — luxury serif, ivory over the hero, maroon once scrolled */
+.navbar-logo {
+  font-family: var(--font-script);
+  font-style: italic;
+  font-size: 1.45rem;
+  letter-spacing: 0.04em;
+  color: #fcfcfc;
+  text-decoration: none;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+  transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar--scrolled .navbar-logo {
+  color: var(--color-maroon);
+  text-shadow: none;
+}
+
+/* NAVBAR: right-aligned links, equal 2.4rem spacing */
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 2.4rem;
+}
+
+.navbar-link {
+  position: relative;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #fcfcfc;
+  text-decoration: none;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  padding: 0.25rem 0;
+  transition: color 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar--scrolled .navbar-link {
+  color: var(--color-maroon);
+  text-shadow: none;
+}
+
+/* NAVBAR: smooth gold underline grows in on hover; stays on the active link */
+.navbar-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1px;
+  background: #d4af37;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar-link:hover::after,
+.navbar-link.active::after {
+  transform: scaleX(1);
+}
+
+.navbar-link:hover,
+.navbar-link.active {
+  color: #d4af37;
+}
+
+/* Mobile: two-row navbar — logo centered above the link row so all five links
+   stay visible without clipping at narrow widths */
+@media (max-width: 700px) {
+  .navbar {
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem 0.6rem;
+  }
+  .navbar--scrolled {
+    padding: 0.55rem 1rem 0.5rem;
+  }
+  .navbar-logo {
+    font-size: 1.2rem;
+    white-space: nowrap;
+  }
+  .navbar-links {
+    gap: 1rem;
+  }
+  .navbar-link {
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+  }
+}

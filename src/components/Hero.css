@@ -1,0 +1,280 @@
+/* HERO: full-viewport (100vh) cinematic hero — the background <img> is a plain
+   DOM element so it paints immediately (BUG FIX: previously hidden behind the
+   3D loader until scroll). */
+
+.hero-section {
+  position: relative;
+  height: 100vh;
+  min-height: 640px;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  pointer-events: auto;
+}
+
+/* Background layer — the instant-paint fallback beneath the 3D canvas; oversized
+   so edges never show during parallax/dissolve motion */
+.hero-bg {
+  position: absolute;
+  inset: -12% 0;
+  z-index: 0;
+}
+
+/* HERO 3D: the layered WebGL scene sits directly above the fallback image and
+   below the scrim; pointer events pass through except where the canvas needs them
+   (R3F attaches its own handlers; the section content sits above it) */
+.hero-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+/* PHASE 4 (Exit): sandal dissolve veil — rises as you scroll out so the hero
+   melts into the next section with depth (no hard cut, no fade-to-white) */
+.hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(241, 230, 216, 0) 0%, rgba(241, 230, 216, 0.55) 45%, #f1e6d8 100%);
+  will-change: opacity;
+}
+
+.hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  user-select: none;
+  /* HERO BUG FIX: no opacity/transform/visibility gating of any kind — the image
+     is fully visible from first paint */
+}
+
+/* Cinematic scrim: maroon-tinted left-weighted gradient for white text legibility
+   (sits above the 3D canvas, below content) */
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(90deg, rgba(20, 4, 8, 0.72) 0%, rgba(20, 4, 8, 0.42) 42%, rgba(20, 4, 8, 0.12) 75%),
+    linear-gradient(0deg, rgba(20, 4, 8, 0.55) 0%, rgba(20, 4, 8, 0) 35%);
+}
+
+/* Soft light glow — large radial gold bloom above the canvas for extra atmosphere */
+.hero-glow {
+  position: absolute;
+  z-index: 2;
+  top: -20%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.32) 0%, rgba(212, 175, 55, 0) 62%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+/* Floating golden particles — DOM mirror of the 3D dust, above the scrim */
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hero-particle {
+  position: absolute;
+  bottom: -2%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f4e2b8 0%, #d4af37 70%);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.75);
+}
+
+/* Center-left content lockup — top padding keeps the eyebrow clear of the fixed
+   navbar on short viewports */
+.hero-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.1rem;
+  padding: 5.5rem 6vw 0;
+  max-width: 780px;
+  color: #ffffff;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: #d4af37;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  font-size: clamp(2.7rem, 5.6vw, 4.9rem);
+  line-height: 1.12;
+  letter-spacing: 0.015em;
+  color: #ffffff;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
+  margin: 0;
+}
+
+.hero-title::after {
+  content: '';
+  display: block;
+  width: 4.5rem;
+  height: 1px;
+  margin-top: 1.3rem;
+  background: linear-gradient(90deg, #d4af37, transparent);
+}
+
+.hero-sub {
+  font-family: var(--font-body);
+  font-size: 1.06rem;
+  font-weight: 300;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 54ch;
+  margin: 0;
+}
+
+/* CTA row */
+.hero-ctas {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 1.6rem;
+  flex-wrap: wrap;
+}
+
+.btn-gold {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1c1305;
+  background: linear-gradient(120deg, #e3c877 0%, #d4af37 55%, #b8942e 100%);
+  padding: 1rem 2.1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.35);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 38px rgba(212, 175, 55, 0.5);
+}
+
+.btn-outline {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff;
+  padding: 1rem 2.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  transition: background 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+/* Bottom statistics */
+.hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  margin-top: 3rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.hero-stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: #d4af37;
+  line-height: 1;
+}
+
+.hero-stat-label {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* Scroll indicator — now bottom-right so it doesn't collide with the stats row */
+.scroll-indicator {
+  position: absolute;
+  right: 2.4rem;
+  bottom: 2.4rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.8;
+}
+
+.mouse {
+  width: 24px;
+  height: 36px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.wheel {
+  width: 4px;
+  height: 8px;
+  background-color: #d4af37;
+  border-radius: 2px;
+}
+
+.scroll-indicator .script-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    padding: 5.5rem 1.5rem 0;
+  }
+  .hero-stats {
+    gap: 1.6rem;
+  }
+  .hero-stat-num {
+    font-size: 1.5rem;
+  }
+  /* Scroll cue hides on small screens where space is tight */
+  .scroll-indicator {
+    display: none;
+  }
+}

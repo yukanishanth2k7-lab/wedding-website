@@ -1,0 +1,103 @@
+/* FIX (blank space): 8rem -> 5rem, matching EventDetails so the vertical rhythm
+   stays consistent through the end of the page. */
+.rsvp-section {
+  padding: 5rem 2rem;
+  background: transparent;
+}
+
+.rsvp-container {
+  max-width: 600px;
+  width: 100%;
+  padding: 4rem;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.title {
+  font-size: 3.5rem;
+  color: var(--color-maroon);
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  color: var(--color-maroon-light);
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.rsvp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  width: 100%;
+}
+
+/* COLOR SWAP: form fields restyled for the sandal theme — white fields, maroon
+   ink and hairlines (was champagne-tinted on dark glass). Sizing/radius unchanged. */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: #ffffff;
+  border: 1px solid rgba(92, 10, 30, 0.25);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-maroon);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+/* COLOR SWAP: focus ring rgba(91,20,20,0.1) -> maroon-alpha on the new palette */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--color-maroon);
+  box-shadow: 0 0 0 2px rgba(92, 10, 30, 0.1);
+  border: 1px solid rgba(92, 10, 30, 0.12);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #999;
+}
+
+/* COLOR SWAP: submit button set to the luxurious maroon accent (white on maroon —
+   accessible) instead of inheriting the old champagne primary */
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border-radius: 8px;
+  width: 100%;
+  background: #5C0A1E;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: background 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: #7d1b31;
+}
+
+@media (max-width: 768px) {
+  .rsvp-container {
+    padding: 2rem;
+  }
+}

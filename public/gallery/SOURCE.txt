@@ -1,0 +1,14 @@
+Source of images in this folder
+================================
+
+Downloaded: 2026-09-18, from https://luxeweddings.in/gallery
+(image paths img/gallery/*, img/slider/*, img/wedding.jpg — full-resolution originals)
+
+- `webp/` subfolder contains WebP derivatives generated locally with sharp
+  (same pixel dimensions as the originals; used by the Portfolio grid).
+- decor-1.jpeg was excluded: truncated/corrupt on the origin server.
+
+IMPORTANT: These images are copyright of their photographer/owner (Luxe Weddings
+or their contracted photographers). Before publishing this site live, confirm
+written permission or a licence to use them — using another business's gallery
+photography commercially without permission is infringement.

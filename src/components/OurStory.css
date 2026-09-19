@@ -1,0 +1,98 @@
+/* FIX (blank space): min-height: 100vh removed — a single glass card was being
+   stretched to a full viewport with dead space above and below. Section now hugs
+   its content; spacing comes from the section padding. */
+.story-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.story-container {
+  max-width: 800px;
+  width: 100%;
+}
+
+.story-card {
+  padding: 4rem;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.story-icon {
+  color: var(--color-maroon);
+  margin-bottom: 1rem;
+}
+
+.story-card h2 {
+  font-size: 3.5rem;
+  margin-bottom: 2rem;
+  color: var(--color-maroon);
+}
+
+/* COLOR SWAP: body copy #333 -> deep maroon ink on the white glass card */
+.story-content {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #5C0A1E;
+  margin-bottom: 3rem;
+}
+
+.story-content p {
+  margin-bottom: 1rem;
+}
+
+.timeline {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  position: relative;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background-color: var(--color-sandal-dark);
+  z-index: 1;
+}
+
+.timeline-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  z-index: 2;
+  position: relative;
+  gap: 0.5rem;
+}
+
+.year {
+  font-family: var(--font-heading);
+  background: var(--color-white);
+  padding: 5px 15px;
+  border-radius: 20px;
+  border: 1px solid var(--color-sandal-dark);
+  font-weight: 600;
+  color: var(--color-maroon);
+}
+
+.event {
+  font-size: 1.2rem;
+  color: var(--color-maroon-light);
+}
+
+@media (max-width: 768px) {
+  .story-card {
+    padding: 2rem;
+  }
+  .timeline {
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .timeline::before {
+    display: none;
+  }
+}

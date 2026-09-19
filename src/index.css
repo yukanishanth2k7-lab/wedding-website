@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* THEME SWAP: full palette replacement — old champagne/void theme removed.
+   New palette: sandal #F1E6D8 (primary bg), white #FFFFFF (contrast surfaces),
+   luxurious maroon #5C0A1E (accent ~10-20%). Variable names kept so usage sites
+   don't change; only the values below were swapped. */
+:root {
+  --color-void: #F1E6D8; /* COLOR SWAP: was #1a0505 deep maroon void — now sandal, the primary background */
+  --color-ivory: #5C0A1E; /* COLOR SWAP: was #fcfcfc light text — now maroon ink, the main text on sandal */
+  --color-champagne: #5C0A1E; /* COLOR SWAP: was #e6d5b8 light sand — now maroon ink for loader/labels */
+  --color-maroon: #5C0A1E; /* COLOR SWAP: was #e6d5b8 — now the true luxurious maroon accent */
+  --color-maroon-light: #5C0A1E; /* COLOR SWAP: was #fcfcfc — now maroon ink for quiet labels */
+  --color-sandal-dark: rgba(92, 10, 30, 0.35); /* COLOR SWAP: was #cbb69d — now maroon-alpha hairlines/borders */
+  --color-white: #ffffff; /* unchanged — white stays the contrast surface */
+  
+  --font-heading: 'Cinzel', serif;
+  --font-script: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-body);
+  /* COLOR SWAP: page background resolves to sandal #F1E6D8, text to maroon ink */
+  background-color: var(--color-void);
+  color: var(--color-ivory);
+  overscroll-behavior: none;
+}
+
+/* Lenis smooth scroll requires html to not have smooth behavior */
+html.lenis {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.canvas-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+
+/* The scroll container that provides the height for ScrollTrigger.
+   FIX (blank space): was min-height: 800vh with pointer-events: none — the container
+   padded 8 viewports of scroll for 4 sections, and ate all pointer events so the 3D
+   hover states were dead. Now the container is exactly as tall as its content. */
+.scroll-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100vh; /* collapses to content height: hero 100vh + story/details/RSVP auto */
+  z-index: 2;
+  pointer-events: none; /* background passthrough — panels re-enable locally */
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  position: relative;
+  width: 100%;
+  /* FIX (blank space): min-height: 100vh removed — sections now hug their content;
+     only the hero keeps a full viewport (it's a title card, that's its real size). */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  pointer-events: none;
+}
+
+.glass-panel {
+  /* COLOR SWAP: dark maroon glass -> white glass (secondary/contrast surface) with
+     maroon-alpha hairline border and a maroon-tinted shadow; radii/blur unchanged. */
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(92, 10, 30, 0.22);
+  color: var(--color-ivory);
+  box-shadow: 0 10px 30px rgba(92, 10, 30, 0.12);
+  pointer-events: auto;
+}
+
+.script-text {
+  font-family: var(--font-script);
+  font-style: italic;
+}
+
+/* Loading screen */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background-color: var(--color-void);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--color-champagne);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  letter-spacing: 4px;
+}

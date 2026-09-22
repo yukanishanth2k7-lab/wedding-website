@@ -85,8 +85,22 @@ export default function Home() {
       },
     });
 
+    // FIX (scroll drift): section boundaries were measured before gallery images
+    // decoded — as lazy webps popped in, the page grew and the 3D progress map
+    // drifted out of sync (photos clicked at the wrong scroll spots). Watch the
+    // container's size and re-measure when it settles.
+    const container = scrollContainerRef.current;
+    let refreshTimer = 0;
+    const ro = new ResizeObserver(() => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 150);
+    });
+    if (container) ro.observe(container);
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.clearTimeout(refreshTimer);
+      ro.disconnect();
       lenis.destroy();
       trigger.kill();
       setLenisInstance(null);

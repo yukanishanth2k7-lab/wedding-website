@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { trapFocus } from '../utils/a11y';
+import { getLenisInstance } from '../store';
 import './Portfolio.css';
 
 type Category = 'photography' | 'cinematography';
@@ -130,11 +131,17 @@ export default function Portfolio() {
       if (el instanceof HTMLElement) el.setAttribute('aria-hidden', 'true');
     });
     document.body.style.overflow = 'hidden';
+    // FIX (scroll): body overflow alone doesn't stop Lenis — the smooth-scroll
+    // raf kept scrolling the page BEHIND the open lightbox. Stop/start it so
+    // the dialog truly owns the wheel while open.
+    const lenis = getLenisInstance();
+    lenis?.stop();
     return () => {
       [root, main].forEach((el) => {
         if (el instanceof HTMLElement) el.removeAttribute('aria-hidden');
       });
       document.body.style.overflow = '';
+      lenis?.start();
     };
   }, [lightbox]);
 

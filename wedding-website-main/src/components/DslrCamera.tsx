@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store';
-import { corridorCurve, CORRIDOR_PHOTOS, PHOTO_IRIS } from './corridorPath';
+import { corridorCurve, CORRIDOR_PHOTOS, PHOTO_IRIS, PHOTO_FLASH } from './corridorPath';
 
 /* ═══════════════════════════════════════════════════════════════
    THE WORKING DSLR — one realistic camera (metal body, glass lens,
@@ -31,6 +31,8 @@ export default function DslrCamera() {
   const mirror = useRef<THREE.Mesh>(null);
   const lensGlass = useRef<THREE.Mesh>(null);
   const flashLamp = useRef<THREE.MeshStandardMaterial>(null);
+  const flashLight = useRef<THREE.PointLight>(null);
+  const speedlight = useRef<THREE.MeshStandardMaterial>(null);
   const irisBladesRef = useRef<THREE.Group>(null);
 
   const prefersReducedMotion = useAppStore((s) => s.prefersReducedMotion);
@@ -92,6 +94,7 @@ export default function DslrCamera() {
     // the full iris reveal (the photographer keeps the button down while the
     // frame develops), then releases. Pure function of t — scrub-safe.
     const shutterT = next.clickT;
+    const clickDelta = t - shutterT;
     const pressIn = THREE.MathUtils.smoothstep(t, shutterT - 0.014, shutterT);
     const release = 1 - THREE.MathUtils.smoothstep(t, shutterT + PHOTO_IRIS, shutterT + PHOTO_IRIS + 0.02);
     const press = pressIn * release;
@@ -115,10 +118,25 @@ export default function DslrCamera() {
     if (flashLamp.current) {
       flashLamp.current.emissiveIntensity = 0.15 + press * 1.4;
     }
+
+    // ── SPEEDLIGHT: a burst of real light at each click. Attack is instant
+    // (the tube fires the moment the shutter closes), decay over PHOTO_FLASH.
+    // Because photos click BEFORE closest approach, the flash pops while the
+    // camera is square to the frame — you see the light leave the tube.
+    const fire = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.2)) : 0;
+    if (flashLight.current) {
+      flashLight.current.intensity = fire * 130;
+      flashLight.current.distance = 6 + fire * 14;
+    }
+    if (speedlight.current) {
+      speedlight.current.emissiveIntensity = 0.08 + fire * 9;
+    }
   });
 
   return (
     <group ref={group} scale={0.82}>
+      {/* the flash's real light — parented to the body so it travels with it */}
+      <pointLight ref={flashLight} position={[0.06, 1.4, -1.2]} color="#ffe9c4" intensity={0} distance={8} decay={2} />
       <group ref={inner}>
         {/* ORIENTATION: the aim quaternion faces -Z at the target photo; the lens
             is modeled along -X, so the body is rotated to point the glass forward. */}
@@ -145,6 +163,19 @@ export default function DslrCamera() {
           <boxGeometry args={[0.36, 0.03, 0.26]} />
           <meshStandardMaterial {...GOLD} />
         </mesh>
+
+        {/* ── SPEEDLIGHT: pop-up flash unit, angled forward — the burst source. */}
+        <group position={[0.06, 0.56, 0]} rotation={[0.28, 0, 0]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.3, 0.16, 0.24]} />
+            <meshStandardMaterial {...BODY_METAL} />
+          </mesh>
+          {/* emitter face — flashes white-hot at the click */}
+          <mesh position={[0, 0.05, -0.125]} rotation={[-0.28, 0, 0]}>
+            <planeGeometry args={[0.24, 0.1]} />
+            <meshStandardMaterial ref={speedlight} color="#d8dade" emissive="#fff3d6" emissiveIntensity={0.08} />
+          </mesh>
+        </group>
 
         {/* ── SHUTTER BUTTON + DIALS ── */}
         <mesh ref={shutterBtn} position={[0.42, 0.315, 0.06]} castShadow>

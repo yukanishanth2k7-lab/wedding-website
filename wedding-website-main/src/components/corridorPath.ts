@@ -63,9 +63,10 @@ const IMAGES = [
 ];
 
 // Nearest-t lookup: sample the curve densely once, find the parameter whose
-// curve point passes closest to each photo. The click fires just AFTER closest
-// approach — you glide up to a blurred frame, and as you draw level with it,
-// the shutter snaps and it sharpens.
+// curve point passes closest to each photo. The click fires a breath BEFORE
+// closest approach — the shutter snaps and the flash fires while the frame is
+// still growing on screen, so you always meet finished photographs, never
+// blurred ones.
 const CURVE_SAMPLES = 600;
 const sampled: THREE.Vector3[] = corridorCurve.getSpacedPoints(CURVE_SAMPLES);
 
@@ -82,21 +83,56 @@ function nearestT(point: THREE.Vector3): number {
   return bestIdx / (sampled.length - 1);
 }
 
-export const CORRIDOR_PHOTOS: CorridorPhoto[] = IMAGES.map((url, i) => {
-  const isLeft = i % 2 === 0;
-  const z = -1.5 - i * 3.65; // ~15 photos across the flight (z −1.5 → −52.6)
-  const xBase = isLeft ? -4.7 : 4.7;
-  const x = xBase + Math.sin(i * 1.7) * 0.7;
-  const y = 0.15 + Math.cos(i * 2.3) * 0.55;
-  const rotY = isLeft ? 0.32 : -0.32;
-  const width = 3.9 + Math.sin(i * 0.9) * 0.5;
+// Click retiming: the curve's S-path makes some adjacent photos' approach
+// moments collide (two flashes at once, one photo skipped). So after finding
+// each photo's natural approach t, clicks are RE-TIMED: sorted by approach,
+// then a forward pass enforces a minimum spacing between consecutive fires —
+// every photo gets its own distinct flash → iris → sharp beat, in order.
+const MIN_CLICK_GAP = 0.055;
+const FIRST_CLICK = 0.07;  // before the max load lead (0.12): the first frame
+                           // approached is already taken and clean at load
+const LAST_CLICK = 0.93;   // 0.93 + iris 0.045 = 0.975 — the finale's reveal
+                           // always completes before the page ends
 
-  const clickT = THREE.MathUtils.clamp(nearestT(new THREE.Vector3(x, y, z)) + 0.02, 0.05, 0.985);
+export const CORRIDOR_PHOTOS: CorridorPhoto[] = (() => {
+  const photos = IMAGES.map((url, i) => {
+    const isLeft = i % 2 === 0;
+    const z = -1.5 - i * 3.65; // ~15 photos across the flight (z −1.5 → −52.6)
+    const xBase = isLeft ? -4.7 : 4.7;
+    const x = xBase + Math.sin(i * 1.7) * 0.7;
+    const y = 0.15 + Math.cos(i * 2.3) * 0.55;
+    const rotY = isLeft ? 0.32 : -0.32;
+    const width = 3.9 + Math.sin(i * 0.9) * 0.5;
 
-  return { url, x, y, z, width, rotY, seed: 17 + i * 29, clickT };
-});
+    const approachT = nearestT(new THREE.Vector3(x, y, z));
+    return { url, x, y, z, width, rotY, seed: 17 + i * 29, approachT, clickT: 0 };
+  });
+
+  // retime: walk the photos in approach order, pushing clicks apart
+  const byApproach = [...photos].sort((a, b) => a.approachT - b.approachT);
+  let prev = -Infinity;
+  for (const p of byApproach) {
+    p.clickT = THREE.MathUtils.clamp(
+      Math.max(p.approachT - 0.015, prev + MIN_CLICK_GAP, FIRST_CLICK),
+      FIRST_CLICK,
+      LAST_CLICK
+    );
+    prev = p.clickT;
+  }
+  // Backward pass: the forward pass can pile late photos onto LAST_CLICK
+  // (they'd clamp to the same instant — one shared flash, one skipped photo).
+  // Walk back from the finale and spread any overflow onto earlier photos.
+  let next = Infinity;
+  for (let i = byApproach.length - 1; i >= 0; i--) {
+    const p = byApproach[i];
+    p.clickT = THREE.MathUtils.clamp(Math.min(p.clickT, next - MIN_CLICK_GAP), FIRST_CLICK, LAST_CLICK);
+    next = p.clickT;
+  }
+  return photos;
+})();
 
 /** The scroll window over which one photo's drift/tilt choreography plays. */
 export const PHOTO_APPROACH = 0.11; // t-units before the click: drift settles in
 export const PHOTO_SHARPEN = 0.028; // t-units for the rack-focus after the click
 export const PHOTO_IRIS = 0.045; // t-units for the iris wipe after the click
+export const PHOTO_FLASH = 0.016; // t-units the flash burst takes to die out

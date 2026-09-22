@@ -4,7 +4,7 @@ import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store';
 import { sharpenTexture } from '../utils/textures';
-import { PHOTO_SHARPEN, PHOTO_IRIS } from './corridorPath';
+import { PHOTO_SHARPEN, PHOTO_IRIS, PHOTO_FLASH } from './corridorPath';
 
 /* ═══════════════════════════════════════════════════════════════
    IRIS PHOTO — the core reveal.
@@ -48,6 +48,7 @@ const fragmentShader = /* glsl */ `
   uniform float uTime;
   uniform float uProgress;   // 0 = blurred/waiting, 1 = clicked/sharp
   uniform float uIris;       // 0 = iris not yet opened, 1 = fully open
+  uniform float uFlash;      // 0 = quiet, 1 = flash burst at full brightness
   uniform float uSeed;
   varying vec2 vUv;
 
@@ -108,8 +109,14 @@ const fragmentShader = /* glsl */ `
     vec3 color = mix(soft, sharp, inside);
     color += vec3(0.83, 0.68, 0.35) * edgeGlow * 0.35;
 
-    // Before the click the whole print sits slightly dimmed — "not taken yet"
-    color *= mix(0.86, 1.0, uProgress);
+    // ── FLASH WASH: the DSLR's speedlight fires at the click. The burst
+    // floods the frame with warm light and decays — the photograph
+    // "catches the light" as it's taken. Alive before the click too: the
+    // frame sits readable (light blur, gentle lift) rather than muddy.
+    float flashLift = uFlash * (0.75 + 0.25 * inside);
+    color = mix(color, vec3(1.06, 1.0, 0.9), flashLift * 0.82);
+    color += flashLift * 0.28;
+    color *= mix(0.94, 1.0, uProgress);
 
     gl_FragColor = vec4(color, 1.0);
     #include <colorspace_fragment>
@@ -156,6 +163,7 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
       uTime: { value: 0 },
       uProgress: { value: 0 },
       uIris: { value: 0 },
+      uFlash: { value: 0 },
       uSeed: { value: seed },
     }),
     [texture, seed]
@@ -177,6 +185,7 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
       breath.position.z = 0;
       mat.uniforms.uProgress.value = 1;
       mat.uniforms.uIris.value = 1;
+      mat.uniforms.uFlash.value = 0;
       mat.uniforms.uTime.value = 0;
       return;
     }
@@ -206,6 +215,10 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     mat.uniforms.uProgress.value = raw * raw * (3 - 2 * raw);
     const rawIris = THREE.MathUtils.clamp(clickDelta / PHOTO_IRIS, 0, 1);
     mat.uniforms.uIris.value = rawIris * rawIris * (3 - 2 * rawIris);
+    // ── FLASH: a hard attack / exponential decay burst at the click.
+    // Peaking exactly when the shutter fires, dying out over PHOTO_FLASH.
+    const flash = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.22)) : 0;
+    mat.uniforms.uFlash.value = flash;
     mat.uniforms.uTime.value = time;
   });
 

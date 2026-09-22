@@ -217,7 +217,7 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     mat.uniforms.uIris.value = rawIris * rawIris * (3 - 2 * rawIris);
     // ── FLASH: a hard attack / exponential decay burst at the click.
     // Peaking exactly when the shutter fires, dying out over PHOTO_FLASH.
-    const flash = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.22)) : 0;
+    const flash = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.3)) : 0;
     mat.uniforms.uFlash.value = flash;
     mat.uniforms.uTime.value = time;
   });

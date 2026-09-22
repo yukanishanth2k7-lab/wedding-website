@@ -135,4 +135,6 @@ export const CORRIDOR_PHOTOS: CorridorPhoto[] = (() => {
 export const PHOTO_APPROACH = 0.11; // t-units before the click: drift settles in
 export const PHOTO_SHARPEN = 0.028; // t-units for the rack-focus after the click
 export const PHOTO_IRIS = 0.045; // t-units for the iris wipe after the click
-export const PHOTO_FLASH = 0.016; // t-units the flash burst takes to die out
+export const PHOTO_FLASH = 0.022; // t-units the flash burst takes to die out
+// (must stay < CLICK_AIM_WINDOW 0.03 and < MIN_CLICK_GAP 0.055 — one burst per
+// click, fully decayed before the camera turns to the next frame)

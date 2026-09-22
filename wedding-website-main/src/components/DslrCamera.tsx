@@ -33,6 +33,7 @@ export default function DslrCamera() {
   const flashLamp = useRef<THREE.MeshStandardMaterial>(null);
   const flashLight = useRef<THREE.PointLight>(null);
   const speedlight = useRef<THREE.MeshStandardMaterial>(null);
+  const flashHousing = useRef<THREE.MeshStandardMaterial>(null);
   const irisBladesRef = useRef<THREE.Group>(null);
 
   const prefersReducedMotion = useAppStore((s) => s.prefersReducedMotion);
@@ -70,16 +71,20 @@ export default function DslrCamera() {
     }
 
     // ── AIM: the photo currently being worked — the one whose click window
-    // (a beat before its clickT, through its full iris reveal) contains the
-    // scroll. KEY FIX: the camera used to jump to the NEXT photo the instant
-    // one fired, so the shutter read as pressed on the wrong frame. Now the
-    // aim (and therefore the shutter) stays locked on a photo through its
-    // whole click window — every photo gets its own click, none get skipped.
+    // contains the scroll t. KEY FIX (dead flash): this used to measure against
+    // the DSLR's LEADING position (t + lead), which pushed every selected
+    // clickT into the future — the flash/shutter condition (t ≥ clickT) could
+    // never fire, so the camera never flashed. It must measure against raw t,
+    // with a window narrower than MIN_CLICK_GAP (0.055) so the just-clicked
+    // photo hands off to the next one before ITS click:
+    //   dt ∈ (−0.03, 0]  → aimed at the frame it just took (flash + reveal)
+    //   dt ∈ (0, gap)    → aimed ahead at the frame it's about to take
+    const CLICK_AIM_WINDOW = 0.03;
     let next = CORRIDOR_PHOTOS[CORRIDOR_PHOTOS.length - 1];
     let best = Infinity;
     for (const p of CORRIDOR_PHOTOS) {
-      const dt = p.clickT - dslrT;
-      if (dt >= -PHOTO_IRIS && dt < best) {
+      const dt = p.clickT - t;
+      if (dt >= -CLICK_AIM_WINDOW && dt < best) {
         best = dt;
         next = p;
       }
@@ -123,21 +128,26 @@ export default function DslrCamera() {
     // (the tube fires the moment the shutter closes), decay over PHOTO_FLASH.
     // Because photos click BEFORE closest approach, the flash pops while the
     // camera is square to the frame — you see the light leave the tube.
-    const fire = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.2)) : 0;
+    const fire = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.3)) : 0;
     if (flashLight.current) {
-      flashLight.current.intensity = fire * 130;
-      flashLight.current.distance = 6 + fire * 14;
+      flashLight.current.intensity = fire * 170;
+      flashLight.current.distance = 12 + fire * 10;
     }
     if (speedlight.current) {
       speedlight.current.emissiveIntensity = 0.08 + fire * 9;
+    }
+    // housing glows warm through the burst so the pop reads from any angle
+    if (flashHousing.current) {
+      flashHousing.current.emissiveIntensity = 0.04 + fire * 1.6;
     }
   });
 
   return (
     <group ref={group} scale={0.82}>
-      {/* the flash's real light — parented to the body so it travels with it */}
-      <pointLight ref={flashLight} position={[0.06, 1.4, -1.2]} color="#ffe9c4" intensity={0} distance={8} decay={2} />
       <group ref={inner}>
+        {/* the flash's real light — parented to the AIM group so it always sits
+            just ahead of the lens, pointing at whichever frame is being taken */}
+        <pointLight ref={flashLight} position={[0, 0.5, -1.2]} color="#ffe9c4" intensity={0} distance={12} decay={2} />
         {/* ORIENTATION: the aim quaternion faces -Z at the target photo; the lens
             is modeled along -X, so the body is rotated to point the glass forward. */}
         <group rotation={[0, -Math.PI / 2, 0]}>
@@ -164,16 +174,19 @@ export default function DslrCamera() {
           <meshStandardMaterial {...GOLD} />
         </mesh>
 
-        {/* ── SPEEDLIGHT: pop-up flash unit, angled forward — the burst source. */}
+        {/* ── SPEEDLIGHT: pop-up flash unit — the burst source. The emitter
+            faces the LENS direction (−X in body space) so the flash visibly
+            fires toward the frame being taken; the housing glows warm through
+            the burst so the pop reads from behind the camera too. */}
         <group position={[0.06, 0.56, 0]} rotation={[0.28, 0, 0]}>
           <mesh castShadow>
             <boxGeometry args={[0.3, 0.16, 0.24]} />
-            <meshStandardMaterial {...BODY_METAL} />
+            <meshStandardMaterial ref={flashHousing} {...BODY_METAL} emissive="#ffd98a" emissiveIntensity={0.04} />
           </mesh>
           {/* emitter face — flashes white-hot at the click */}
-          <mesh position={[0, 0.05, -0.125]} rotation={[-0.28, 0, 0]}>
-            <planeGeometry args={[0.24, 0.1]} />
-            <meshStandardMaterial ref={speedlight} color="#d8dade" emissive="#fff3d6" emissiveIntensity={0.08} />
+          <mesh position={[-0.152, 0.02, 0]} rotation={[0, -Math.PI / 2, 0]}>
+            <planeGeometry args={[0.2, 0.12]} />
+            <meshStandardMaterial ref={speedlight} color="#d8dade" emissive="#fff3d6" emissiveIntensity={0.08} side={THREE.DoubleSide} />
           </mesh>
         </group>
 

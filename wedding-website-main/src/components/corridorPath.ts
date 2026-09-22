@@ -89,12 +89,13 @@ function nearestT(point: THREE.Vector3): number {
 // moments collide (two flashes at once, one photo skipped). So after finding
 // each photo's natural approach t, clicks are RE-TIMED: sorted by approach,
 // then a forward pass enforces a minimum spacing between consecutive fires —
-// every photo gets its own distinct flash → iris → sharp beat, in order.
-const MIN_CLICK_GAP = 0.055;
-const FIRST_CLICK = 0.07;  // before the max load lead (0.12): the first frame
-                           // approached is already taken and clean at load
-const LAST_CLICK = 0.93;   // 0.93 + iris 0.045 = 0.975 — the finale's reveal
-                           // always completes before the page ends
+// every photo gets its own distinct flash → clear beat, in order.
+const MIN_CLICK_GAP = 0.06; // > flash 0.022 + hd window headroom: no overlap
+const FIRST_CLICK = 0.045;  // the first frame flashes almost immediately —
+                            // the viewer sees the first blur→flash→clear
+                            // beat right after the hero photo develops
+const LAST_CLICK = 0.93;    // 0.93 + flash 0.022 + hd 0.02 = 0.972 — the finale
+                            // always completes before the page ends
 
 export const CORRIDOR_PHOTOS: CorridorPhoto[] = (() => {
   const photos = IMAGES.map((url, i) => {
@@ -135,8 +136,13 @@ export const CORRIDOR_PHOTOS: CorridorPhoto[] = (() => {
 
 /** The scroll window over which one photo's drift/tilt choreography plays. */
 export const PHOTO_APPROACH = 0.11; // t-units before the click: drift settles in
-export const PHOTO_SHARPEN = 0.028; // t-units for the rack-focus after the click
-export const PHOTO_IRIS = 0.045; // t-units for the iris wipe after the click
-export const PHOTO_FLASH = 0.022; // t-units the flash burst takes to die out
+// FLASH WINDOW: 0.18–0.22s spec. The journey spans ~1500px of scroll ≈ 90s at
+// the tuned wheel pace, so t=1 ≈ 90s → 1s ≈ 0.011 t-units → 0.20s ≈ 0.0022.
+// Rounded up slightly for visibility at fast scroll speeds.
+export const PHOTO_FLASH = 0.0024; // t-units — the white burst lives ~0.2s
+export const PHOTO_HD_SETTLE = 0.004; // t-units — the HD detail pulse after the burst
+// Kept as aliases: nothing outside IrisPhoto should reference the old names.
+export const PHOTO_SHARPEN = 0.0001; // legacy: sharpness now snaps in one frame
+export const PHOTO_IRIS = 0.004;     // legacy: iris wipe removed (DslrCamera press-hold window)
 // (must stay < CLICK_AIM_WINDOW 0.03 and < MIN_CLICK_GAP 0.055 — one burst per
 // click, fully decayed before the camera turns to the next frame)

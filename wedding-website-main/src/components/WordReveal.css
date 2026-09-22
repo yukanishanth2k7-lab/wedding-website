@@ -22,15 +22,14 @@
   max-width: 1020px;
   margin: 0 auto;
   padding: 3.5rem 3rem;
-  /* TYPE: Canela (if locally installed) → Fraunces — Fraunces is Canela's
-     closest free relative: the same soft flared serifs, high stroke contrast,
-     and old-style warmth that make Canela the luxury-editorial serif. */
-  font-family: 'Canela', 'Fraunces', 'Cormorant Garamond', 'Playfair Display', serif;
-  font-size: clamp(2.1rem, 4.9vw, 4rem);
-  font-weight: 350; /* Fraunces variable weight between light and book */
-  font-variation-settings: 'opsz' 110; /* display optical size — fine hairline serifs */
-  line-height: 1.42;
-  letter-spacing: 0.012em;
+  /* TYPE: Luxurious Script (Rob Leuschke / TypeSETit) — this statement is the
+     ONE place the calligraphic script is used (display size, plenty of air, so
+     the swashes stay legible). Serif fallbacks catch the flash of unstyled text. */
+  font-family: 'Luxurious Script', 'Fraunces', 'Cormorant Garamond', cursive;
+  font-size: clamp(2.6rem, 5.8vw, 4.9rem);
+  font-weight: 400;
+  line-height: 1.5; /* script needs taller leading — descenders and swashes */
+  letter-spacing: 0.015em;
   text-align: center;
   color: #f1e6d8;
   z-index: 0; /* stacking context: keeps the frosted ::before behind the words, above the canvas */

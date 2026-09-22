@@ -12,8 +12,8 @@
   --color-white: #ffffff;
 
   --font-heading: 'Cinzel', serif;
-  /* Luxurious Script (Rob Leuschke / TypeSETit) — decorative calligraphic script.
-     DISPLAY ONLY (logo/hero/footer signature): at small sizes a script is unreadable. */
+  /* Luxurious Script (Rob Leuschke / TypeSETit) — the calligraphic script.
+     Used ONLY for the "One camera…" statement; token kept for that single use. */
   --font-script: 'Luxurious Script', 'Cormorant Garamond', cursive;
   --font-body: 'Inter', sans-serif;
 }

@@ -96,35 +96,8 @@
 
 /* A11Y: the logo wrapper link resets default link styling */
 .navbar-logo-link {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
+  display: block;
   border-radius: 6px;
-  text-decoration: none;
-}
-
-/* STUDIO WORDMARK: the calligraphic signature face beside the logo mark.
-   Decorative font at display scale only — hidden on tight screens where it
-   would shrink to illegible squiggles (the mark alone carries the brand). */
-.navbar-wordmark {
-  font-family: var(--font-script);
-  font-size: 1.55rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  color: #f1e6d8;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
-  white-space: nowrap;
-  transform: translateY(-1px); /* optical alignment with the mark */
-}
-
-.navbar--scrolled .navbar-wordmark {
-  text-shadow: none;
-}
-
-@media (max-width: 900px) {
-  .navbar-wordmark {
-    display: none;
-  }
 }
 
 

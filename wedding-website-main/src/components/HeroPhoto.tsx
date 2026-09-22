@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,23 +6,27 @@ import { useAppStore } from '../store';
 import { sharpenTexture } from '../utils/textures';
 
 /* ═══════════════════════════════════════════════════════════════
-   HERO PHOTO — full-screen cover photo facing the viewer at load.
+   HERO PHOTO — blur → FLASH → crystal clear, the spec verbatim.
 
-   The site's transition language is the APERTURE, so the hero
-   speaks it too: on load the photo develops through a hexagonal
-   lens-iris opening from the center (0 → open over ~1.6s), and as
-   you scroll the same iris CLOSES (blades sweeping shut) while the
-   photo gently pushes in — the lens capping before the corridor
-   opens up behind it. No flash, no plain zoom, no shatter.
+   LOAD: the photograph sits fully visible but with a heavy gaussian
+   defocus (≈22px class) and slightly reduced contrast. After ~1.05s
+   a DSLR flash fires (the working camera is off-stage deep in the
+   corridor — the burst reads as light from outside the frame, like
+   a real photographer's flash): pure white burst + warm bloom +
+   brief exposure glow, 0.20s. AT THE FLASH PEAK the blur is removed
+   instantly — no fade, no dissolve, no image swap; the flash itself
+   is the transition. A short HD detail settle (fabric, jewelry,
+   skin, decorative lights) rides in right after, then rests.
 
-   FRAMING FIX: at rest the corridor camera is already yawed a few
-   degrees toward the spline's first waypoint — a straight-on plane
-   slid right and left a black band. The plane now sits ON the rest
-   view ray and turns to face the camera, so the photograph fills
-   the viewport edge-to-edge. A top-biased crop (same idea as CSS
-   object-position: center 30%) keeps the couple's faces in frame
-   instead of cropping them off the top.
+   SCROLL: unchanged behavior — the photo pushes in ~6% and fades as
+   the corridor takes over. Framing: the plane sits on the resting
+   camera's view ray (rest yaw + offset) so it fills the viewport
+   edge-to-edge, faces held in frame by the top-biased crop.
    ═══════════════════════════════════════════════════════════════ */
+
+const FLASH_AT = 1.05;   // spec: 0.8–1.2s after load
+const FLASH_LEN = 0.2;   // spec: 0.18–0.22s burst
+const HD_LEN = 0.55;     // HD detail settle after the burst
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -34,58 +38,88 @@ const vertexShader = /* glsl */ `
 
 const fragmentShader = /* glsl */ `
   uniform sampler2D uTexture;
-  uniform float uOpen;      // 0 = iris shut, 1 = fully open
-  uniform float uFade;      // overall dim before fully shut
-  uniform vec2 uCenter;     // image point (uv) held at screen center (the faces)
-  uniform vec2 uScale;      // plane world size (w, h) — keeps the iris circular
-  uniform float uRadius;    // world radius normalizer
+  uniform float uSharp;   // 0 = blurred (waiting), 1 = crystal clear (snaps in one frame)
+  uniform float uFlash;   // 0 = quiet, 1 = flash burst at full brightness
+  uniform float uHd;      // HD detail settle pulse, 0 → 1 → 0 after the reveal
+  uniform float uFade;    // overall dim on scroll-out
   varying vec2 vUv;
 
+  // TRUE DEFOCUS: separable 13-tap gaussian — a real out-of-focus look.
+  vec3 blurred(vec2 uv, float radius) {
+    vec3 result = texture2D(uTexture, uv).rgb;
+    if (radius >= 0.0005) {
+      result += (texture2D(uTexture, uv + vec2(0.0, radius * 1.4118)) .rgb
+              + texture2D(uTexture, uv - vec2(0.0, radius * 1.4118)) .rgb) * 0.2967931837316281;
+      result += (texture2D(uTexture, uv + vec2(0.0, radius * 3.2942)) .rgb
+              + texture2D(uTexture, uv - vec2(0.0, radius * 3.2942)) .rgb) * 0.0944565457367937;
+      result += (texture2D(uTexture, uv + vec2(0.0, radius * 5.1766)) .rgb
+              + texture2D(uTexture, uv - vec2(0.0, radius * 5.1766)) .rgb) * 0.0103813624011481;
+      result += (texture2D(uTexture, uv + vec2(radius * 1.4118, 0.0)) .rgb
+              + texture2D(uTexture, uv - vec2(radius * 1.4118, 0.0)) .rgb) * 0.14839659186581405;
+      result += (texture2D(uTexture, uv + vec2(radius * 3.2942, 0.0)) .rgb
+              + texture2D(uTexture, uv - vec2(radius * 3.2942, 0.0)) .rgb) * 0.04722827286839685;
+      result += (texture2D(uTexture, uv + vec2(radius * 5.1766, 0.0)) .rgb
+              + texture2D(uTexture, uv - vec2(radius * 5.1766, 0.0)) .rgb) * 0.00519068120057405;
+    }
+    return result;
+  }
+
+  // WARM CINEMATIC GRADE: gentle S-contrast, warm highlights, natural skin.
+  vec3 grade(vec3 c) {
+    c = mix(vec3(0.5), c, 1.24);
+    float l = dot(c, vec3(0.299, 0.587, 0.114));
+    c = mix(vec3(l), c, 1.12);
+    c *= vec3(1.05, 0.97, 0.93);
+    return c;
+  }
+
+  // HD DETAIL SETTLE: local-contrast micro-boost after the reveal.
+  vec3 hdDetail(vec2 uv, vec3 base, float amount) {
+    vec3 lo = blurred(uv, 0.005);
+    return base + (base - lo) * amount;
+  }
+
   void main() {
-    vec4 tex = texture2D(uTexture, vUv);
+    vec2 uv = vUv;
 
-    // ── APERTURE IRIS: same 6-blade hexagon as the corridor photos,
-    // computed in WORLD units so it stays circular on any plane aspect.
-    // At uOpen = 1 the hexagon's circumradius clears the corners.
-    vec2 p = (vUv - uCenter) * uScale;
-    float r = length(p) / uRadius;
-    float ang = atan(p.y, p.x) + (1.0 - uOpen) * 0.55;
-    float sector = mod(ang, 1.0471976) - 0.5235988;
-    float edge = uOpen * 1.72 / max(cos(sector), 0.001);
-    float inside = smoothstep(edge, edge - 0.04, r);
-    // a gold glint rides the blade edge while the iris moves
-    float edgeGlow = smoothstep(0.07, 0.0, abs(r - edge)) * uOpen * (1.0 - uOpen) * 4.0;
+    // waiting state: heavy defocus + slightly reduced contrast, fully visible
+    float blurR = (1.0 - uSharp) * 0.013;
+    vec3 soft = blurred(uv, blurR);
+    soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.82);
+    soft = grade(soft) * 0.96;
 
-    vec3 color = tex.rgb * inside;
-    color += vec3(0.83, 0.68, 0.35) * edgeGlow * 0.4;
+    vec3 sharp = grade(texture2D(uTexture, uv).rgb);
+    sharp = hdDetail(uv, sharp, uHd * 0.9);
 
-    // outside the blades: the dark lens barrel, with a faint gold ring
-    vec3 barrel = vec3(0.035, 0.033, 0.03) + vec3(0.16, 0.13, 0.06) * smoothstep(1.05, 0.75, r) * (1.0 - uOpen);
-    color = mix(barrel, color, inside);
+    // THE FLASH IS THE TRANSITION: uSharp snaps 0→1 at the burst peak.
+    vec3 color = mix(soft, sharp, uSharp);
+
+    // pure white burst + warm bloom halo + exposure glow + flare wash
+    float bloom = uFlash * uFlash;
+    color = mix(color, vec3(1.12, 1.08, 1.0), bloom * 0.92);
+    color += vec3(1.0, 0.92, 0.72) * uFlash * 0.35;
+    color += vec3(0.9, 0.8, 0.55) * bloom * uFlash * 0.18;
 
     gl_FragColor = vec4(color * uFade, 1.0);
     #include <colorspace_fragment>
   }
 `;
 
-// ── REST FRAMING ──
-// The corridor camera rests at (0, 0.4, 10.5) looking a few degrees LEFT
-// (toward the spline's first waypoint). These place the plane on that
-// view ray, turned to face the lens, so the photo fills the viewport.
-const REST_YAW = 0.15;   // rad — plane normal aimed back at the resting camera
-const REST_X = -0.82;    // world x where the rest view ray crosses z = 5.1
-const FOCUS_V = 0.62;    // image line (uv, from bottom) held at screen center — the faces
-const OVERSCAN = 1.15;   // cover plus margin for pointer parallax
+// ── REST FRAMING ── the plane sits on the resting camera's view ray
+const REST_YAW = 0.15;
+const REST_X = -0.82;
+const FOCUS_V = 0.62;  // image line (uv, from bottom) held mid-screen — the faces
+const OVERSCAN = 1.15;
 
 export default function HeroPhoto() {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.ShaderMaterial>(null);
-  const texture = useTexture('/gallery/contact-img.jpg'); // full-quality original — the hero must be tack sharp
+  const texture = useTexture('/gallery/contact-img.jpg'); // full-quality original
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const prefersReducedMotion = useAppStore((s) => s.prefersReducedMotion);
 
-  // LOAD: open the iris shortly after mount (after the loader clears)
+  // LOAD CLOCK: the blur → flash → clear sequence is time-based from mount
   const [bornAt] = useState(() => performance.now());
 
   useEffect(() => {
@@ -114,17 +148,13 @@ export default function HeroPhoto() {
   const uniforms = useMemo(
     () => ({
       uTexture: { value: texture },
-      uOpen: { value: 0 },
+      uSharp: { value: 0 },
+      uFlash: { value: 0 },
+      uHd: { value: 0 },
       uFade: { value: 1 },
-      uCenter: { value: new THREE.Vector2(0.5, FOCUS_V) },
-      uScale: { value: new THREE.Vector2(1, 1) },
-      uRadius: { value: 1 },
     }),
     [texture]
   );
-
-  // keep the iris circular as the plane resizes (frame-driven: applied in
-  // useFrame below so it can never fall out of sync with the mesh scale)
 
   useFrame(() => {
     const mesh = meshRef.current;
@@ -132,26 +162,25 @@ export default function HeroPhoto() {
     if (!mesh || !mat) return;
     const t = useAppStore.getState().scrollProgress;
 
-    // LOAD: iris opens from shut over ~1.6s (reduced motion: instantly open)
-    const elapsed = (performance.now() - bornAt) / 1000;
-    const loadOpen = prefersReducedMotion
-      ? 1
-      : THREE.MathUtils.clamp((elapsed - 0.35) / 1.6, 0, 1);
-    const openEased = loadOpen * loadOpen * (3 - 2 * loadOpen);
+    // ── THE LOAD SEQUENCE (time-based; reduced motion: sharp immediately) ──
+    if (prefersReducedMotion) {
+      mat.uniforms.uSharp.value = 1;
+      mat.uniforms.uFlash.value = 0;
+      mat.uniforms.uHd.value = 0;
+    } else {
+      const e = (performance.now() - bornAt) / 1000;
+      mat.uniforms.uSharp.value = e >= FLASH_AT ? 1 : 0;
+      const fd = e - FLASH_AT;
+      mat.uniforms.uFlash.value = fd >= 0 && fd < FLASH_LEN ? Math.exp(-fd / (FLASH_LEN * 0.34)) : 0;
+      const hd = THREE.MathUtils.clamp((fd - FLASH_LEN) / HD_LEN, 0, 1);
+      mat.uniforms.uHd.value = hd < 1 ? Math.sin(hd * Math.PI) : 0;
+    }
 
-    // SCROLL: the iris closes over the first 11% of scroll (blades shut),
-    // with a gentle push-in (max 6%, much quieter than the old zoom)
-    const scrollShut = THREE.MathUtils.smoothstep(t, 0.02, 0.11);
-    const open = openEased * (1 - scrollShut);
-
-    mat.uniforms.uOpen.value = open;
+    // ── SCROLL OUT: quiet push-in + fade (unchanged behavior) ──
     mat.uniforms.uFade.value = 1 - THREE.MathUtils.smoothstep(t, 0.09, 0.125);
     mesh.visible = mat.uniforms.uFade.value > 0.01;
     const zoom = 1 + THREE.MathUtils.smoothstep(t, 0, 0.12) * 0.06;
     mesh.scale.set(fitted.w * zoom, fitted.h * zoom, 1);
-    // iris geometry tracks the live scale (circular on any aspect, any zoom)
-    mat.uniforms.uScale.value.set(fitted.w * zoom, fitted.h * zoom);
-    mat.uniforms.uRadius.value = (Math.min(fitted.w, fitted.h) * zoom) / 2;
   });
 
   return (

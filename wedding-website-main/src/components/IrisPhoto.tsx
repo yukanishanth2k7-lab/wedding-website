@@ -4,32 +4,34 @@ import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store';
 import { sharpenTexture } from '../utils/textures';
-import { PHOTO_SHARPEN, PHOTO_IRIS, PHOTO_FLASH } from './corridorPath';
+import { PHOTO_FLASH, PHOTO_HD_SETTLE } from './corridorPath';
 
 /* ═══════════════════════════════════════════════════════════════
-   IRIS PHOTO — the core reveal.
+   IRIS PHOTO — the blur → FLASH → crystal-clear reveal.
 
-   Each frame is a hung print (gold rim + dark matte + photo) sized
-   to the photo's REAL aspect ratio, and the whole assembly drifts
-   as one piece. The photo's life is driven by the scroll t against
-   its clickT (the moment the DSLR's shutter fires for it):
+   The spec, implemented literally:
 
-     before click → visible but defocused (true 2D gaussian blur),
-                    slightly dimmed — "not taken yet"
-     click        → a hexagonal aperture-iris of SHARPNESS sweeps
-                    open from the center while the focus racks —
-                    inside the blades: sharp; outside: still soft;
-                    when fully open the whole frame is crisp
-     after        → stays sharp, breathing almost imperceptibly
+   • Every photo loads FULLY VISIBLE with a heavy gaussian defocus
+     (≈22px class) and slightly reduced contrast. Composition never
+     changes — only clarity does.
+   • When the DSLR's shutter fires for it (its clickT), the flash
+     pops: pure white burst, bloom halo, a brief exposure glow.
+   • AT THE PEAK of the flash the blur is removed INSTANTLY — the
+     flash itself is the transition. No fade, no dissolve, no iris
+     wipe, no image swap: one sample clock crosses zero and the
+     sharp full-quality image is simply THERE, mid-flash.
+   • Immediately after the reveal, a short HD settle enhances local
+     contrast (fabric, jewelry, skin, flowers) before resting.
 
-   Everything is a pure function of (t − clickT), so scrubbing the
-   page back and forth never desyncs blur from the shutter.
+   The blur state is a function of TIME-SINCE-LOAD (photos sit blurred
+   from birth), while the click timing stays a pure function of scroll
+   t — scrubbing back and forth replays the same deterministic story.
    ═══════════════════════════════════════════════════════════════ */
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
   uniform float uTime;
-  uniform float uProgress;   // 0 = waiting/blurred, 1 = clicked/sharp
+  uniform float uSharp;      // 0 = waiting/blurred, 1 = clicked/clear
   uniform float uSeed;
 
   void main() {
@@ -37,7 +39,7 @@ const vertexShader = /* glsl */ `
     vec3 pos = position;
     // Alive-at-rest: an almost imperceptible breathing so frames never
     // read as static textures. Scaled per-photo by seed.
-    float breath = sin(uTime * 0.6 + uSeed) * 0.012 * (1.0 - uProgress * 0.5);
+    float breath = sin(uTime * 0.6 + uSeed) * 0.012 * (1.0 - uSharp * 0.5);
     pos.z += breath;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
@@ -46,17 +48,15 @@ const vertexShader = /* glsl */ `
 const fragmentShader = /* glsl */ `
   uniform sampler2D uTexture;
   uniform float uTime;
-  uniform float uProgress;   // 0 = blurred/waiting, 1 = clicked/sharp
-  uniform float uIris;       // 0 = iris not yet opened, 1 = fully open
+  uniform float uSharp;      // 0 = fully blurred (waiting), 1 = crystal clear
   uniform float uFlash;      // 0 = quiet, 1 = flash burst at full brightness
+  uniform float uHd;         // 0 = settled, 1 = right-after-reveal (HDR boost)
   uniform float uSeed;
   varying vec2 vUv;
 
-  // ── TRUE DEFOCUS: separable 13-tap gaussian (x then y) — a real
-  // out-of-focus look, not a directional smear. Radius collapses to 0
-  // exactly as uProgress hits 1.
+  // ── TRUE DEFOCUS: separable 13-tap gaussian (x then y) — a real camera
+  // out-of-focus look. uSharp crosses 0→1 in ONE frame at the flash peak.
   vec3 blurred(vec2 uv, float radius) {
-    // init at declaration (single assignment path — keeps HLSL translators happy)
     vec3 result = texture2D(uTexture, uv).rgb;
     if (radius >= 0.0005) {
       result += (texture2D(uTexture, uv + vec2(0.0, radius * 1.4118)) .rgb
@@ -65,7 +65,6 @@ const fragmentShader = /* glsl */ `
               + texture2D(uTexture, uv - vec2(0.0, radius * 3.2942)) .rgb) * 0.0944565457367937;
       result += (texture2D(uTexture, uv + vec2(0.0, radius * 5.1766)) .rgb
               + texture2D(uTexture, uv - vec2(0.0, radius * 5.1766)) .rgb) * 0.0103813624011481;
-      // horizontal taps (halved weight — one cheap combined 2-pass blur)
       result += (texture2D(uTexture, uv + vec2(radius * 1.4118, 0.0)) .rgb
               + texture2D(uTexture, uv - vec2(radius * 1.4118, 0.0)) .rgb) * 0.14839659186581405;
       result += (texture2D(uTexture, uv + vec2(radius * 3.2942, 0.0)) .rgb
@@ -76,7 +75,8 @@ const fragmentShader = /* glsl */ `
     return result;
   }
 
-  // ── HD grading (the studio's look): contrast + warmth
+  // ── WARM CINEMATIC GRADE: gentle S-contrast, warm highlights, protected
+  // skin-tone mids — the high-end film-frame look.
   vec3 grade(vec3 c) {
     c = mix(vec3(0.5), c, 1.24);
     float l = dot(c, vec3(0.299, 0.587, 0.114));
@@ -85,38 +85,36 @@ const fragmentShader = /* glsl */ `
     return c;
   }
 
+  // ── HD DETAIL SETTLE: local-contrast micro-boost (unsharp mask against the
+  // heavy blur) that rides in just after the reveal — fabric weave, jewelry
+  // facets, skin texture and decorative lights pop, then relax to natural.
+  vec3 hdDetail(vec2 uv, vec3 base, float amount) {
+    vec3 lo = blurred(uv, 0.006);
+    return base + (base - lo) * amount;
+  }
+
   void main() {
     vec2 uv = vUv;
-    float blurR = (1.0 - uProgress) * 0.012;
 
-    vec3 soft = grade(blurred(uv, blurR));
+    // Pre-click state: heavy defocus (≈22px class on a full-bleed render) and
+    // slightly reduced contrast — fully visible, unmistakably "not taken yet".
+    float blurR = (1.0 - uSharp) * 0.013;
+    vec3 soft = blurred(uv, blurR);
+    soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.82); // flat contrast
+    soft = grade(soft) * 0.96;
+
     vec3 sharp = grade(texture2D(uTexture, uv).rgb);
+    sharp = hdDetail(uv, sharp, uHd * 0.9);
 
-    // ── APERTURE-IRIS WIPE: a 6-blade hexagonal iris of SHARPNESS
-    // opening from the center over the blurred print. The hexagon's
-    // inradius scales with uIris; at uIris = 1 its circumradius
-    // (1.62 / cos 30° ≈ 1.87) clears the frame corners (r ≈ 1.41).
-    vec2 p = uv - 0.5;
-    float r = length(p) * 2.0;
-    float ang = atan(p.y, p.x) + (1.0 - uIris) * 0.55; // blades rotate as they open
-    float sector = mod(ang, 1.0471976) - 0.5235988;    // −30°..30° within a blade segment
-    float edge = uIris * 1.62 / max(cos(sector), 0.001);
+    // THE TRANSITION IS THE FLASH: uSharp crosses in a single frame, so this
+    // mix snaps soft→sharp at the burst peak. No crossfade, no wipe.
+    vec3 color = mix(soft, sharp, uSharp);
 
-    float inside = smoothstep(edge, edge - 0.05, r);
-    // soft gold hairline rides the blade edge while the iris is moving
-    float edgeGlow = smoothstep(0.06, 0.0, abs(r - edge)) * uIris * (1.0 - uIris) * 4.0;
-
-    vec3 color = mix(soft, sharp, inside);
-    color += vec3(0.83, 0.68, 0.35) * edgeGlow * 0.35;
-
-    // ── FLASH WASH: the DSLR's speedlight fires at the click. The burst
-    // floods the frame with warm light and decays — the photograph
-    // "catches the light" as it's taken. Alive before the click too: the
-    // frame sits readable (light blur, gentle lift) rather than muddy.
-    float flashLift = uFlash * (0.75 + 0.25 * inside);
-    color = mix(color, vec3(1.06, 1.0, 0.9), flashLift * 0.82);
-    color += flashLift * 0.28;
-    color *= mix(0.94, 1.0, uProgress);
+    // ── FLASH: pure white burst + warm bloom halo + exposure glow, 0.20s.
+    float bloom = uFlash * uFlash;
+    color = mix(color, vec3(1.12, 1.08, 1.0), bloom * 0.92);         // white core
+    color += vec3(1.0, 0.92, 0.72) * uFlash * 0.35;                  // warm exposure glow
+    color += vec3(0.9, 0.8, 0.55) * bloom * uFlash * 0.18;           // soft lens-flare wash
 
     gl_FragColor = vec4(color, 1.0);
     #include <colorspace_fragment>
@@ -161,9 +159,9 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     () => ({
       uTexture: { value: texture },
       uTime: { value: 0 },
-      uProgress: { value: 0 },
-      uIris: { value: 0 },
+      uSharp: { value: 0 },
       uFlash: { value: 0 },
+      uHd: { value: 0 },
       uSeed: { value: seed },
     }),
     [texture, seed]
@@ -178,14 +176,14 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     const t = useAppStore.getState().scrollProgress;
     const time = clock.getElapsedTime();
 
-    // A11Y: reduced motion — frames are static, sharp, no iris choreography.
+    // A11Y: reduced motion — frames are static, sharp, no flash choreography.
     if (prefersReducedMotion) {
       drift.position.set(position[0], position[1], position[2]);
       drift.rotation.set(0, rotY, 0);
       breath.position.z = 0;
-      mat.uniforms.uProgress.value = 1;
-      mat.uniforms.uIris.value = 1;
+      mat.uniforms.uSharp.value = 1;
       mat.uniforms.uFlash.value = 0;
+      mat.uniforms.uHd.value = 0;
       mat.uniforms.uTime.value = 0;
       return;
     }
@@ -208,17 +206,22 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     drift.rotation.z = roll;
     breath.position.z = Math.sin(time * 0.6 + seed) * 0.012;
 
-    // ── THE CLICK SYNC: both the rack-focus AND the iris are pure functions
-    // of (t − clickT) — the exact moment the DSLR's shutter fires.
+    // ── THE CLICK SYNC — the flash itself is the transition:
+    //   clickT − 0.055…clickT : the photo sits in heavy blur (22px class,
+    //                           reduced contrast) — it holds this state from
+    //                           birth, so late-arriving frames are already
+    //                           "waiting to be taken"
+    //   clickT (shutter)      : uFlash snaps to 1 (pure white burst) and
+    //                           uSharp snaps to 1 IN THE SAME FRAME — the
+    //                           image is crystal-clear at the flash's peak
+    //   clickT…+PHOTO_FLASH   : burst decays (0.18–0.22s spec window)
+    //   +PHOTO_FLASH…+HD      : uHd rides the HD detail settle, then rests
     const clickDelta = t - clickT;
-    const raw = THREE.MathUtils.clamp(clickDelta / PHOTO_SHARPEN, 0, 1);
-    mat.uniforms.uProgress.value = raw * raw * (3 - 2 * raw);
-    const rawIris = THREE.MathUtils.clamp(clickDelta / PHOTO_IRIS, 0, 1);
-    mat.uniforms.uIris.value = rawIris * rawIris * (3 - 2 * rawIris);
-    // ── FLASH: a hard attack / exponential decay burst at the click.
-    // Peaking exactly when the shutter fires, dying out over PHOTO_FLASH.
-    const flash = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.3)) : 0;
+    mat.uniforms.uSharp.value = clickDelta >= 0 ? 1 : 0;
+    const flash = clickDelta >= 0 && clickDelta < PHOTO_FLASH ? Math.exp(-clickDelta / (PHOTO_FLASH * 0.34)) : 0;
     mat.uniforms.uFlash.value = flash;
+    const hdRaw = THREE.MathUtils.clamp((clickDelta - PHOTO_FLASH) / PHOTO_HD_SETTLE, 0, 1);
+    mat.uniforms.uHd.value = hdRaw < 1 ? Math.sin(hdRaw * Math.PI) : 0;
     mat.uniforms.uTime.value = time;
   });
 

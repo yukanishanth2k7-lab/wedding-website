@@ -11,11 +11,19 @@ import './WordReveal.css';
 const STATEMENT =
   "One camera. Every angle of your story. It sees the vows you whispered, the hands that shook, and the room that held its breath.";
 
+/* The emotive beats of the statement — set in Cormorant's calligraphic italic
+   so the typography itself carries feeling, like a line from a letter. */
+const ACCENT_WORDS = new Set(['vows', 'whispered', 'breath']);
+const isAccent = (word: string) => ACCENT_WORDS.has(word.replace(/[^a-z]/gi, '').toLowerCase());
+
 function Word({ word, progress, range }: { word: string; progress: MotionValue<number>; range: [number, number] }) {
   const opacity = useTransform(progress, range, [0.16, 1]);
   const color = useTransform(progress, range, ['#f1e6d8', '#d4af37']);
   return (
-    <motion.span style={{ opacity, color }} className="word-reveal-word">
+    <motion.span
+      style={{ opacity, color }}
+      className={`word-reveal-word${isAccent(word) ? ' word-reveal-word--accent' : ''}`}
+    >
       {word}
     </motion.span>
   );

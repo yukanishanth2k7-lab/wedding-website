@@ -1,6 +1,8 @@
 .word-reveal-section {
   position: relative;
-  min-height: 220vh; /* provides the scroll runway for the pinned word-by-word reveal */
+  /* SCROLL RUNWAY: doubled (was 220vh) — the word-by-word reveal now plays at
+     HALF SPEED, taking twice the scroll to complete. Slow, savoured, premium. */
+  min-height: 440vh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -17,21 +19,35 @@
   align-items: center;
   align-content: center;
   justify-content: center;
-  max-width: 900px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(1.8rem, 4.2vw, 3.4rem);
-  font-weight: 600;
-  line-height: 1.35;
+  /* LUXURY TYPE: Cormorant Garamond — high-contrast couture serif. Light
+     weight, larger presence, generous air, the faintest tracking. */
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-size: clamp(2.1rem, 4.9vw, 4rem);
+  font-weight: 400;
+  line-height: 1.42;
+  letter-spacing: 0.012em;
   text-align: center;
   color: #f1e6d8;
 }
 
 .word-reveal-word {
   display: inline-block;
-  margin: 0 0.14em;
+  margin: 0 0.16em;
   will-change: opacity, color;
+}
+
+/* Italic accent words — the emotive beats (vows, whispered, breath…) set in
+   Cormorant's calligraphic italic, a half-step larger, with a whisper of a
+   champagne glow when fully lit. */
+.word-reveal-word--accent {
+  font-style: italic;
+  font-size: 1.06em;
+  letter-spacing: 0.005em;
+  padding-right: 0.06em; /* italic overhang needs breathing room */
+  text-shadow: 0 0 22px rgba(212, 175, 55, 0);
 }
 
 .word-reveal-glow {

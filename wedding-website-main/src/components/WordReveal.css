@@ -19,35 +19,76 @@
   align-items: center;
   align-content: center;
   justify-content: center;
-  max-width: 980px;
+  max-width: 1020px;
   margin: 0 auto;
-  padding: 2rem;
-  /* LUXURY TYPE: Cormorant Garamond — high-contrast couture serif. Light
-     weight, larger presence, generous air, the faintest tracking. */
-  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  padding: 3.5rem 3rem;
+  /* TYPE: Canela (if locally installed) → Fraunces — Fraunces is Canela's
+     closest free relative: the same soft flared serifs, high stroke contrast,
+     and old-style warmth that make Canela the luxury-editorial serif. */
+  font-family: 'Canela', 'Fraunces', 'Cormorant Garamond', 'Playfair Display', serif;
   font-size: clamp(2.1rem, 4.9vw, 4rem);
-  font-weight: 400;
+  font-weight: 350; /* Fraunces variable weight between light and book */
+  font-variation-settings: 'opsz' 110; /* display optical size — fine hairline serifs */
   line-height: 1.42;
   letter-spacing: 0.012em;
   text-align: center;
   color: #f1e6d8;
+  z-index: 0; /* stacking context: keeps the frosted ::before behind the words, above the canvas */
+}
+
+/* ── FROSTED BACKDROP (readability layer) ──
+   The 3D corridor photos drift behind this text; the gold words vanished over
+   bright frames. A soft-edged bed of the page's own charcoal sits behind the
+   block. KEY: a pure alpha-gradient falloff with NO backdrop-filter and NO
+   blur — a backdrop-filter's blur stops at the element's boundary, which read
+   as a hard dark ellipse over bright photos. A gradient that reaches zero
+   alpha inside its own box has no edge to see: over the charcoal page it's
+   invisible, over a bright photo it reads as natural shadow falloff. */
+.word-reveal-text::before {
+  content: '';
+  position: absolute;
+  inset: -4rem -5rem;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 58% 55% at 50% 50%,
+    rgba(10, 10, 11, 0.85) 0%,
+    rgba(10, 10, 11, 0.66) 48%,
+    rgba(10, 10, 11, 0.36) 74%,
+    rgba(10, 10, 11, 0) 97%
+  );
+  pointer-events: none;
 }
 
 .word-reveal-word {
   display: inline-block;
   margin: 0 0.16em;
-  will-change: opacity, color;
+  will-change: opacity;
+  /* EDGE DEFINITION: a tight dark halo so letter silhouettes read even when
+     a bright frame drifts behind — reads as depth, not as an outline. */
+  text-shadow: 0 1px 16px rgba(10, 10, 11, 0.65);
+  /* GRADIENT LETTER FILL: champagne-to-off-white, lit from above — catches
+     light with more depth than a flat color. (Fallback: flat gold.) The
+     per-word illumination is the opacity ramp driven from the component. */
+  background: linear-gradient(178deg, #f6efe2 8%, #e9d9ae 38%, #d4af37 68%, #b8944a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #d4af37;
 }
 
 /* Italic accent words — the emotive beats (vows, whispered, breath…) set in
-   Cormorant's calligraphic italic, a half-step larger, with a whisper of a
+   Fraunces' calligraphic italic, a half-step larger, with a whisper of a
    champagne glow when fully lit. */
 .word-reveal-word--accent {
   font-style: italic;
   font-size: 1.06em;
   letter-spacing: 0.005em;
   padding-right: 0.06em; /* italic overhang needs breathing room */
-  text-shadow: 0 0 22px rgba(212, 175, 55, 0);
+  text-shadow: 0 1px 18px rgba(10, 10, 11, 0.7), 0 0 26px rgba(212, 175, 55, 0.18);
+}
+
+.word-reveal-word--accent {
+  background-image: linear-gradient(178deg, #fdf7ea 8%, #f0e2bb 38%, #e0be55 68%, #c49b4e 100%);
 }
 
 .word-reveal-glow {
@@ -62,6 +103,24 @@
   pointer-events: none;
 }
 
+/* SOFT GLOW / BACKLIGHT: a second, tighter halo that rides behind the text
+   block itself (not the section), scaled with the reveal so the light seems
+   to rise out of the page as the words take fire. Pure gradient falloff —
+   no blur filter, no edges. */
+.word-reveal-text::after {
+  content: '';
+  position: absolute;
+  inset: -2rem -3rem;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 55% 52% at 50% 50%,
+    rgba(212, 175, 55, 0.2) 0%,
+    rgba(212, 175, 55, 0.08) 55%,
+    rgba(212, 175, 55, 0) 96%
+  );
+  pointer-events: none;
+}
+
 .word-reveal-kicker {
   position: sticky;
   top: calc(50vh + 3.2rem);
@@ -71,6 +130,13 @@
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: rgba(212, 175, 55, 0.6);
+  text-shadow: 0 1px 10px rgba(10, 10, 11, 0.9), 0 0 22px rgba(212, 175, 55, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-reveal-text .word-reveal-word {
+    opacity: 1;
+  }
 }
 
 /* A11Y: respect the global kill switch too (data-motion reduced) — sticky pin

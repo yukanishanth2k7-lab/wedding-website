@@ -14,6 +14,14 @@ import { sharpenTexture } from '../utils/textures';
    you scroll the same iris CLOSES (blades sweeping shut) while the
    photo gently pushes in — the lens capping before the corridor
    opens up behind it. No flash, no plain zoom, no shatter.
+
+   FRAMING FIX: at rest the corridor camera is already yawed a few
+   degrees toward the spline's first waypoint — a straight-on plane
+   slid right and left a black band. The plane now sits ON the rest
+   view ray and turns to face the camera, so the photograph fills
+   the viewport edge-to-edge. A top-biased crop (same idea as CSS
+   object-position: center 30%) keeps the couple's faces in frame
+   instead of cropping them off the top.
    ═══════════════════════════════════════════════════════════════ */
 
 const vertexShader = /* glsl */ `
@@ -28,18 +36,22 @@ const fragmentShader = /* glsl */ `
   uniform sampler2D uTexture;
   uniform float uOpen;      // 0 = iris shut, 1 = fully open
   uniform float uFade;      // overall dim before fully shut
+  uniform vec2 uCenter;     // image point (uv) held at screen center (the faces)
+  uniform vec2 uScale;      // plane world size (w, h) — keeps the iris circular
+  uniform float uRadius;    // world radius normalizer
   varying vec2 vUv;
 
   void main() {
     vec4 tex = texture2D(uTexture, vUv);
 
-    // ── APERTURE IRIS: same 6-blade hexagon as the corridor photos.
+    // ── APERTURE IRIS: same 6-blade hexagon as the corridor photos,
+    // computed in WORLD units so it stays circular on any plane aspect.
     // At uOpen = 1 the hexagon's circumradius clears the corners.
-    vec2 p = vUv - 0.5;
-    float r = length(p) * 2.0;
+    vec2 p = (vUv - uCenter) * uScale;
+    float r = length(p) / uRadius;
     float ang = atan(p.y, p.x) + (1.0 - uOpen) * 0.55;
     float sector = mod(ang, 1.0471976) - 0.5235988;
-    float edge = uOpen * 1.62 / max(cos(sector), 0.001);
+    float edge = uOpen * 1.72 / max(cos(sector), 0.001);
     float inside = smoothstep(edge, edge - 0.04, r);
     // a gold glint rides the blade edge while the iris moves
     float edgeGlow = smoothstep(0.07, 0.0, abs(r - edge)) * uOpen * (1.0 - uOpen) * 4.0;
@@ -56,10 +68,19 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
+// ── REST FRAMING ──
+// The corridor camera rests at (0, 0.4, 10.5) looking a few degrees LEFT
+// (toward the spline's first waypoint). These place the plane on that
+// view ray, turned to face the lens, so the photo fills the viewport.
+const REST_YAW = 0.15;   // rad — plane normal aimed back at the resting camera
+const REST_X = -0.82;    // world x where the rest view ray crosses z = 5.1
+const FOCUS_V = 0.62;    // image line (uv, from bottom) held at screen center — the faces
+const OVERSCAN = 1.15;   // cover plus margin for pointer parallax
+
 export default function HeroPhoto() {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.ShaderMaterial>(null);
-  const texture = useTexture('/gallery/wedding-1.jpg');
+  const texture = useTexture('/gallery/webp/contact-img.webp');
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const prefersReducedMotion = useAppStore((s) => s.prefersReducedMotion);
@@ -73,14 +94,21 @@ export default function HeroPhoto() {
 
   // object-fit: cover sizing against the camera frustum at the photo's plane
   const fitted = useMemo(() => {
-    const camDist = 5.4; // camera z=10.5(ish) → photo z=5.1
+    const camDist = 5.4; // camera z=10.5 → photo z=5.1
     const fov = (42 * Math.PI) / 180;
-    const h = 2 * camDist * Math.tan(fov / 2);
-    const w = h * (size.width / size.height);
+    const frustumH = 2 * camDist * Math.tan(fov / 2);
+    const frustumW = frustumH * (size.width / size.height);
     const img = texture.image as HTMLImageElement | undefined;
-    const aspect = img && img.width && img.height ? img.width / img.height : 3 / 2;
-    const cover = Math.max(w / aspect, h) * 1.06; // 6% overscan
-    return { w: cover * aspect, h: cover };
+    const aspect = img && img.width && img.height ? img.width / img.height : 0.8; // 1280×1600 fallback
+    let w: number, h: number;
+    if (frustumW / frustumH > aspect) {
+      w = frustumW * OVERSCAN;
+      h = w / aspect;
+    } else {
+      h = frustumH * OVERSCAN;
+      w = h * aspect;
+    }
+    return { w, h };
   }, [size.width, size.height, texture]);
 
   const uniforms = useMemo(
@@ -88,9 +116,15 @@ export default function HeroPhoto() {
       uTexture: { value: texture },
       uOpen: { value: 0 },
       uFade: { value: 1 },
+      uCenter: { value: new THREE.Vector2(0.5, FOCUS_V) },
+      uScale: { value: new THREE.Vector2(1, 1) },
+      uRadius: { value: 1 },
     }),
     [texture]
   );
+
+  // keep the iris circular as the plane resizes (frame-driven: applied in
+  // useFrame below so it can never fall out of sync with the mesh scale)
 
   useFrame(() => {
     const mesh = meshRef.current;
@@ -115,10 +149,17 @@ export default function HeroPhoto() {
     mesh.visible = mat.uniforms.uFade.value > 0.01;
     const zoom = 1 + THREE.MathUtils.smoothstep(t, 0, 0.12) * 0.06;
     mesh.scale.set(fitted.w * zoom, fitted.h * zoom, 1);
+    // iris geometry tracks the live scale (circular on any aspect, any zoom)
+    mat.uniforms.uScale.value.set(fitted.w * zoom, fitted.h * zoom);
+    mat.uniforms.uRadius.value = (Math.min(fitted.w, fitted.h) * zoom) / 2;
   });
 
   return (
-    <mesh ref={meshRef} position={[0, 0.35, 5.1]}>
+    <mesh
+      ref={meshRef}
+      position={[REST_X, 0.35 - (FOCUS_V - 0.5) * fitted.h, 5.1]}
+      rotation={[0, REST_YAW, 0]}
+    >
       <planeGeometry args={[1, 1]} />
       <shaderMaterial ref={matRef} vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={uniforms} transparent depthWrite={false} />
     </mesh>

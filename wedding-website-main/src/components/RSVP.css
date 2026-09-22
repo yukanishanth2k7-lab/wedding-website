@@ -1,0 +1,166 @@
+/* FIX (blank space): 8rem -> 5rem, matching EventDetails so the vertical rhythm
+   stays consistent through the end of the page. */
+.rsvp-section {
+  padding: 5rem 2rem;
+  background: transparent;
+}
+
+.rsvp-container {
+  max-width: 600px;
+  width: 100%;
+  padding: 4rem;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.title {
+  font-size: 3rem;
+  color: #f1e6d8;
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  color: rgba(212, 175, 55, 0.8);
+  margin-bottom: 3rem;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.rsvp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  width: 100%;
+}
+
+/* A11Y: labels are visible above each field — bigger hit area, no placeholder-only
+   forms (placeholders vanish on input and are not a label substitute). */
+.form-group label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.85);
+  margin-bottom: 0.45rem;
+  text-align: left;
+}
+
+/* CHARCOAL THEME: fields sit on the dark glass — deep input wells with ivory ink
+   and gold hairlines. Sizing/radius unchanged. */
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: rgba(12, 12, 14, 0.75);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: #f1e6d8; /* A11Y: ivory on near-black well exceeds 7:1 */
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+/* A11Y: focus state keeps a solid gold border + visible ring. */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+  background: rgba(12, 12, 14, 0.9);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(241, 230, 216, 0.4);
+}
+
+/* A11Y: helper text tied to the submit button via aria-describedby. */
+.form-hint {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(241, 230, 216, 0.6);
+  margin-top: -0.4rem;
+}
+
+/* Success state after submit — replaces the form inline. */
+.rsvp-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 2rem 1rem;
+  color: #f1e6d8;
+}
+
+.rsvp-success h3 {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+}
+
+.rsvp-success p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 40ch;
+}
+
+.btn-outline-dark {
+  margin-top: 1rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #d4af37;
+  background: transparent;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 999px;
+  padding: 0.7rem 1.6rem;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.btn-outline-dark:hover {
+  background: #d4af37;
+  color: #131313;
+}
+
+/* Submit = the shutter release: champagne gold on charcoal */
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border-radius: 8px;
+  width: 100%;
+  background: #d4af37;
+  color: #131313;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 26px rgba(212, 175, 55, 0.28);
+}
+
+.submit-btn:hover {
+  background: #e6c452;
+  box-shadow: 0 10px 34px rgba(212, 175, 55, 0.42);
+}
+
+@media (max-width: 768px) {
+  .rsvp-container {
+    padding: 2rem;
+  }
+}

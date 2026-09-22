@@ -1,0 +1,111 @@
+.services-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8rem 2rem;
+  min-height: 100vh;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 4rem;
+}
+
+.service-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  border-radius: 12px;
+  /* CHARCOAL GLASS: keep the panel opaque enough for ivory ink over the stage */
+  background: rgba(24, 24, 26, 0.62);
+  backdrop-filter: blur(16px) saturate(1.05);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+.service-icon {
+  color: #d4af37;
+  margin-bottom: 1.5rem;
+}
+
+.service-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: 0.1em;
+  color: #d4af37;
+}
+
+.service-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(241, 230, 216, 0.85);
+}
+
+/* ORYZO SPEC-SHEET: deadpan datasheet rows — dotted leader between key and value */
+.service-specs {
+  width: 100%;
+  margin-top: 1.6rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(92, 10, 30, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.service-spec-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--font-body);
+}
+
+.service-spec-row dt {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.75);
+  white-space: nowrap;
+}
+
+.service-spec-row dt::after {
+  content: '';
+  display: inline-block;
+  width: 2.2rem;
+  margin-left: 0.5rem;
+  border-bottom: 1px dotted rgba(212, 175, 55, 0.4);
+  transform: translateY(-3px);
+}
+
+.service-spec-row dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(241, 230, 216, 0.92);
+  text-align: right;
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .services-section {
+    padding: 6rem 1.5rem;
+  }
+  
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+}

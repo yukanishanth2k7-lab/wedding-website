@@ -1,0 +1,57 @@
+.marquee-band {
+  position: relative;
+  z-index: 3;
+  width: 120vw;
+  margin-left: -10vw;
+  transform: rotate(-2.2deg);
+  background: #d4af37;
+  color: #131313;
+  padding: 1.1rem 0;
+  overflow: hidden;
+  pointer-events: none;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-slide 28s linear infinite;
+}
+
+.marquee-track--paused {
+  animation-play-state: paused;
+}
+
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding-right: 1.6rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.marquee-star {
+  color: #5a4708;
+  font-size: 0.85em;
+}
+
+@keyframes marquee-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Global reduced-motion kill switch also catches this, the explicit paused class
+   is belt-and-braces so the band never slides even if the attribute isn't set. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation-play-state: paused;
+  }
+}

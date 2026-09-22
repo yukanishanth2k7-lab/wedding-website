@@ -1,0 +1,61 @@
+.word-reveal-section {
+  position: relative;
+  min-height: 220vh; /* provides the scroll runway for the pinned word-by-word reveal */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.word-reveal-text {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4.2vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  color: #f1e6d8;
+}
+
+.word-reveal-word {
+  display: inline-block;
+  margin: 0 0.14em;
+  will-change: opacity, color;
+}
+
+.word-reveal-glow {
+  position: sticky;
+  top: 25vh;
+  margin: 0 auto;
+  width: min(60vw, 640px);
+  height: min(60vw, 640px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.5) 0%, rgba(212, 175, 55, 0) 62%);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.word-reveal-kicker {
+  position: sticky;
+  top: calc(50vh + 3.2rem);
+  align-self: center;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.6);
+}
+
+/* A11Y: respect the global kill switch too (data-motion reduced) — sticky pin
+   remains (it's layout), but words render fully lit via JS branch. */

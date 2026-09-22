@@ -1,0 +1,143 @@
+import { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { getLenisInstance, focusSection, usePrefersReducedMotion, useAppStore } from '../store';
+import './Navbar.css';
+
+import AnimatedLogo from './AnimatedLogo';
+
+const LINKS = [
+  { id: 'home', label: 'Home' },
+  { id: 'services', label: 'Services' },
+  { id: 'about', label: 'About' },
+  { id: 'contact', label: 'Contact' },
+  { id: 'portfolio', label: 'Portfolio' },
+];
+
+export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState('home');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const setPrefersReducedMotion = useAppStore((s) => s.setPrefersReducedMotion);
+
+  useEffect(() => {
+    // NAVBAR: background turns soft ivory + subtle shadow after the user scrolls
+    // past the hero's first fold; transparent glass above that.
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    // If we're on the portfolio page, keep Portfolio active
+    if (location.pathname === '/portfolio') {
+      setActive('portfolio');
+      return;
+    }
+
+    // NAVBAR: active section highlight — the section occupying the upper-middle
+    // of the viewport wins; Contact stays lit at the very bottom of the page.
+    const targets = LINKS.filter(l => l.id !== 'portfolio')
+      .map((l) => document.getElementById(l.id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    const onScroll = () => {
+      const probe = window.innerHeight * 0.45;
+      let current = 'home';
+      for (const el of targets) {
+        if (el.getBoundingClientRect().top <= probe) current = el.id;
+      }
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+        current = 'contact';
+      }
+      setActive(current);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [location.pathname]);
+
+  const goTo = (id: string) => {
+    if (id === 'portfolio') {
+      navigate('/portfolio');
+      return;
+    }
+
+    if (location.pathname !== '/') {
+      // If we are not on the home page, navigate to home and then scroll
+      navigate('/');
+      // Wait for navigation and rendering to finish, then scroll
+      setTimeout(() => {
+        const lenis = getLenisInstance();
+        if (lenis) {
+          lenis.scrollTo(`#${id}`, { duration: 1.4 });
+        } else {
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }
+        focusSection(id);
+      }, 100);
+      return;
+    }
+
+    const lenis = getLenisInstance();
+    if (lenis) {
+      lenis.scrollTo(`#${id}`, { duration: 1.4 });
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
+    focusSection(id);
+  };
+
+  return (
+    <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`}>
+      {/* NAVBAR: Animated 3D Logo — wrapped in a real link so keyboard/AT users
+          can activate it (the pointer-only div is gone). */}
+      <a
+        href="/"
+        className="navbar-logo-link"
+        aria-label="Venus Photo Studio — home"
+        onClick={(e) => {
+          e.preventDefault();
+          goTo('home');
+        }}
+      >
+        <AnimatedLogo />
+      </a>
+
+      {/* NAVBAR: links aligned top-right with equal spacing; gold underline hover;
+          active section glows gold. aria-current exposes the live section to AT. */}
+      <nav className="navbar-links" aria-label="Primary">
+        {LINKS.map((link) => (
+          <a
+            key={link.id}
+            href={link.id === 'portfolio' ? '/portfolio' : `/#${link.id}`}
+            className={`navbar-link${active === link.id ? ' active' : ''}`}
+            aria-current={active === link.id ? 'true' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              goTo(link.id);
+            }}
+          >
+            {link.label}
+          </a>
+        ))}
+
+        {/* A11Y: motion preference toggle — the same switch as the OS setting,
+            reachable in two clicks for anyone who finds the animation too much. */}
+        <motion.button
+          type="button"
+          className="navbar-motion-toggle"
+          onClick={() => setPrefersReducedMotion(!prefersReducedMotion)}
+          whileTap={prefersReducedMotion ? undefined : { scale: 0.92 }}
+          aria-pressed={prefersReducedMotion}
+          title={prefersReducedMotion ? 'Motion: reduced — click to enable' : 'Motion: full — click to reduce'}
+        >
+          {prefersReducedMotion ? 'Motion off' : 'Motion on'}
+        </motion.button>
+      </nav>
+    </header>
+  );
+}

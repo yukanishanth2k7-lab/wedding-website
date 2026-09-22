@@ -10,7 +10,11 @@
       name="description"
       content="Venus Photo Studio And Lab — luxury wedding and family photography, cinematography, and handcrafted albums in Karaikal. Book your sitting today."
     />
-    <meta name="theme-color" content="#F1E6D8" />
+    <!-- THEME: matches the actual page background (--color-void #131313) so the
+         mobile browser UI wraps the site in the same charcoal stage. -->
+    <meta name="theme-color" content="#131313" />
+    <!-- Native UI (form controls, scrollbars) renders dark to match the stage. -->
+    <meta name="color-scheme" content="dark" />
     <!-- Social preview cards -->
     <meta property="og:title" content="Venus Photo Studio And Lab — Photography Studio in Karaikal" />
     <meta
@@ -22,13 +26,55 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- A11Y: message for visitors with JavaScript disabled (the React app never mounts). -->
+    <!-- A11Y/SEO: real fallback content for crawlers, slow connections, and
+         visitors with JavaScript disabled — indexable studio content, not a
+         "please enable JS" dead end. Styled inline because the app's CSS ships
+         with the JS bundle and never loads in this state. -->
     <noscript>
-      <div style="padding: 2rem; font-family: sans-serif; text-align: center">
-        <h1>Venus Photo Studio And Lab</h1>
-        <p>
-          This site needs JavaScript for the full experience. To book a sitting, call us or visit
-          the studio in Karaikal.
+      <div
+        style="
+          background: #131313;
+          color: #f1e6d8;
+          font-family: Georgia, 'Times New Roman', serif;
+          padding: 3rem 1.5rem 4rem;
+          max-width: 680px;
+          margin: 0 auto;
+          line-height: 1.65;
+        "
+      >
+        <h1 style="font-size: 2rem; font-weight: 500; margin: 0 0 0.5rem; color: #f1e6d8">
+          Venus Photo Studio <em style="color: #d4af37">And Lab</em>
+        </h1>
+        <p style="color: #d4af37; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.78rem; margin: 0 0 1.6rem">
+          Every love story deserves its first frame.
+        </p>
+        <p style="margin: 0 0 1.4rem; color: rgba(241, 230, 216, 0.82)">
+          Luxury wedding and family photography in Karaikal since 2009 — over 500 weddings,
+          8+ years, and thousands of hand-finished frames. We don't direct your day. We disappear
+          into it, and hand you back the moments you missed while you were living them.
+        </p>
+        <h2 style="font-size: 1.05rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #d4af37; margin: 2rem 0 0.7rem">
+          Services
+        </h2>
+        <ul style="margin: 0 0 0.4rem; padding-left: 1.2rem; color: rgba(241, 230, 216, 0.82)">
+          <li>Wedding Photography — candid and traditional coverage</li>
+          <li>Cinematography — 4K cinematic films, live and lapel audio</li>
+          <li>Pre-Wedding Shoots — destination and coastal sessions</li>
+          <li>Destination Weddings — full-travel coverage across South India</li>
+          <li>Premium Albums — handcrafted, museum-grade, lay-flat binding</li>
+        </ul>
+        <h2 style="font-size: 1.05rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #d4af37; margin: 2rem 0 0.7rem">
+          Contact
+        </h2>
+        <p style="margin: 0; color: rgba(241, 230, 216, 0.82)">
+          Phone: <a href="tel:+919999999999" style="color: #d4af37">+91 99999 99999</a><br />
+          Email: <a href="mailto:hello@venusphotostudio.in" style="color: #d4af37">hello@venusphotostudio.in</a><br />
+          Address: Nehru Street, Karaikal, Puducherry 609602<br />
+          Instagram: <a href="https://instagram.com/venusphotostudiokaraikal" style="color: #d4af37">@venusphotostudio</a>
+        </p>
+        <p style="margin: 2rem 0 0; font-size: 0.85rem; color: rgba(241, 230, 216, 0.5)">
+          This site uses JavaScript for the full 3D experience — the booking form and gallery
+          need it enabled. To book a sitting, call us or visit the studio in Karaikal.
         </p>
       </div>
     </noscript>

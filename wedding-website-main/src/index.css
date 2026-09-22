@@ -25,8 +25,9 @@
 html, body {
   width: 100%;
   height: 100%;
+  color-scheme: dark; /* native form controls + scrollbars match the charcoal stage */
   font-family: var(--font-body);
-  /* COLOR SWAP: page background resolves to sandal #F1E6D8, text to maroon ink */
+  /* Page background = the charcoal stage (--color-void), text = warm ivory ink */
   background-color: var(--color-void);
   color: var(--color-ivory);
   overscroll-behavior: none;

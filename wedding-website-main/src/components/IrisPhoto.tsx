@@ -4,22 +4,26 @@ import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store';
 import { sharpenTexture } from '../utils/textures';
+import { PHOTO_SHARPEN, PHOTO_IRIS } from './corridorPath';
 
 /* ═══════════════════════════════════════════════════════════════
-   IRIS PHOTO — the core reveal, replacing the old glass-shatter.
+   IRIS PHOTO — the core reveal.
 
-   The photo's whole life is driven by the distance between the
-   VIEWER CAMERA and the photo:
+   Each frame is a hung print (gold rim + dark matte + photo) sized
+   to the photo's REAL aspect ratio, and the whole assembly drifts
+   as one piece. The photo's life is driven by the scroll t against
+   its clickT (the moment the DSLR's shutter fires for it):
 
-     far         → the frame sits blurred (a 9-tap smear, "out of
-                   focus" bokeh), slightly dark — waiting to be taken
-     approaching → it drifts, tilts and rises into composition in
-                   sync with scroll (shift/rotate per its seed)
-     clickT      → the DSLR's shutter fires: rack-focus blur→sharp
-                   exactly at the click, while an aperture-iris
-                   wipe opens across the frame — blades retracting
-                   from the edges like a lens iris
-     passed      → stays sharp, breathing almost imperceptibly
+     before click → visible but defocused (true 2D gaussian blur),
+                    slightly dimmed — "not taken yet"
+     click        → a hexagonal aperture-iris of SHARPNESS sweeps
+                    open from the center while the focus racks —
+                    inside the blades: sharp; outside: still soft;
+                    when fully open the whole frame is crisp
+     after        → stays sharp, breathing almost imperceptibly
+
+   Everything is a pure function of (t − clickT), so scrubbing the
+   page back and forth never desyncs blur from the shutter.
    ═══════════════════════════════════════════════════════════════ */
 
 const vertexShader = /* glsl */ `
@@ -43,51 +47,69 @@ const fragmentShader = /* glsl */ `
   uniform sampler2D uTexture;
   uniform float uTime;
   uniform float uProgress;   // 0 = blurred/waiting, 1 = clicked/sharp
-  uniform float uIris;       // 0 = iris closed over frame, 1 = fully open
+  uniform float uIris;       // 0 = iris not yet opened, 1 = fully open
   uniform float uSeed;
   varying vec2 vUv;
 
+  // ── TRUE DEFOCUS: separable 13-tap gaussian (x then y) — a real
+  // out-of-focus look, not a directional smear. Radius collapses to 0
+  // exactly as uProgress hits 1.
+  vec3 blurred(vec2 uv, float radius) {
+    // init at declaration (single assignment path — keeps HLSL translators happy)
+    vec3 result = texture2D(uTexture, uv).rgb;
+    if (radius >= 0.0005) {
+      result += (texture2D(uTexture, uv + vec2(0.0, radius * 1.4118)) .rgb
+              + texture2D(uTexture, uv - vec2(0.0, radius * 1.4118)) .rgb) * 0.2967931837316281;
+      result += (texture2D(uTexture, uv + vec2(0.0, radius * 3.2942)) .rgb
+              + texture2D(uTexture, uv - vec2(0.0, radius * 3.2942)) .rgb) * 0.0944565457367937;
+      result += (texture2D(uTexture, uv + vec2(0.0, radius * 5.1766)) .rgb
+              + texture2D(uTexture, uv - vec2(0.0, radius * 5.1766)) .rgb) * 0.0103813624011481;
+      // horizontal taps (halved weight — one cheap combined 2-pass blur)
+      result += (texture2D(uTexture, uv + vec2(radius * 1.4118, 0.0)) .rgb
+              + texture2D(uTexture, uv - vec2(radius * 1.4118, 0.0)) .rgb) * 0.14839659186581405;
+      result += (texture2D(uTexture, uv + vec2(radius * 3.2942, 0.0)) .rgb
+              + texture2D(uTexture, uv - vec2(radius * 3.2942, 0.0)) .rgb) * 0.04722827286839685;
+      result += (texture2D(uTexture, uv + vec2(radius * 5.1766, 0.0)) .rgb
+              + texture2D(uTexture, uv - vec2(radius * 5.1766, 0.0)) .rgb) * 0.00519068120057405;
+    }
+    return result;
+  }
+
+  // ── HD grading (the studio's look): contrast + warmth
+  vec3 grade(vec3 c) {
+    c = mix(vec3(0.5), c, 1.24);
+    float l = dot(c, vec3(0.299, 0.587, 0.114));
+    c = mix(vec3(l), c, 1.12);
+    c *= vec3(1.05, 0.97, 0.93);
+    return c;
+  }
+
   void main() {
     vec2 uv = vUv;
-
-    // ── RACK FOCUS: 9-tap vertical smear whose radius collapses to 0
-    // exactly as uProgress hits 1. The blur IS the pre-click state.
     float blurR = (1.0 - uProgress) * 0.012;
-    vec4 sum = texture2D(uTexture, uv) * 0.30;
-    sum += texture2D(uTexture, uv + vec2(0.0, blurR * 1.0)) * 0.14;
-    sum += texture2D(uTexture, uv + vec2(0.0, blurR * 2.0)) * 0.10;
-    sum += texture2D(uTexture, uv + vec2(0.0, blurR * 3.0)) * 0.06;
-    sum += texture2D(uTexture, uv + vec2(0.0, blurR * 4.0)) * 0.03;
-    sum += texture2D(uTexture, uv - vec2(0.0, blurR * 1.0)) * 0.14;
-    sum += texture2D(uTexture, uv - vec2(0.0, blurR * 2.0)) * 0.10;
-    sum += texture2D(uTexture, uv - vec2(0.0, blurR * 3.0)) * 0.06;
-    sum += texture2D(uTexture, uv - vec2(0.0, blurR * 4.0)) * 0.03;
-    vec4 texColor = sum;
 
-    // HD grading (kept from the studio's look): contrast + warmth
-    texColor.rgb = mix(vec3(0.5), texColor.rgb, 1.28);
-    float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
-    texColor.rgb = mix(vec3(luminance), texColor.rgb, 1.18);
-    texColor.rgb *= vec3(1.05, 0.97, 0.93);
+    vec3 soft = grade(blurred(uv, blurR));
+    vec3 sharp = grade(texture2D(uTexture, uv).rgb);
 
-    // ── APERTURE-IRIS WIPE: a 6-blade iris opening from a pinhole.
-    // Each fragment computes its angle from center; the blade edge is
-    // the hexagon's support radius. uIris: 0 = closed, 1 = open.
+    // ── APERTURE-IRIS WIPE: a 6-blade hexagonal iris of SHARPNESS
+    // opening from the center over the blurred print. The hexagon's
+    // inradius scales with uIris; at uIris = 1 its circumradius
+    // (1.62 / cos 30° ≈ 1.87) clears the frame corners (r ≈ 1.41).
     vec2 p = uv - 0.5;
     float r = length(p) * 2.0;
-    float ang = atan(p.y, p.x) + uIris * 0.35; // blades rotate as they open
+    float ang = atan(p.y, p.x) + (1.0 - uIris) * 0.55; // blades rotate as they open
+    float sector = mod(ang, 1.0471976) - 0.5235988;    // −30°..30° within a blade segment
+    float edge = uIris * 1.62 / max(cos(sector), 0.001);
 
-    float blade = cos(mod(ang, 1.0471976) - 0.5235988); // 60° segments
-    float bladeR = 0.55 / max(blade, 0.001);            // support radius
+    float inside = smoothstep(edge, edge - 0.05, r);
+    // soft gold hairline rides the blade edge while the iris is moving
+    float edgeGlow = smoothstep(0.06, 0.0, abs(r - edge)) * uIris * (1.0 - uIris) * 4.0;
 
-    float openR = bladeR * uIris * 1.4;
-    float inIris = smoothstep(openR - 0.04, openR + 0.04, r);
-    vec3 irisDark = vec3(0.055, 0.05, 0.045);
+    vec3 color = mix(soft, sharp, inside);
+    color += vec3(0.83, 0.68, 0.35) * edgeGlow * 0.35;
 
-    vec3 color = mix(irisDark, texColor.rgb, inIris);
-
-    // Before the click the whole frame sits slightly darker — "not taken yet"
-    color *= mix(0.84, 1.0, uProgress);
+    // Before the click the whole print sits slightly dimmed — "not taken yet"
+    color *= mix(0.86, 1.0, uProgress);
 
     gl_FragColor = vec4(color, 1.0);
     #include <colorspace_fragment>
@@ -103,8 +125,14 @@ interface IrisPhotoProps {
   clickT: number;
 }
 
+/* Frame proportions: gold rim / dark matte extend this far beyond the
+   photo on each side (world units). Scaled to the photo's real aspect. */
+const MAT = 0.07;
+const RIM = 0.11;
+
 export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: IrisPhotoProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const driftRef = useRef<THREE.Group>(null);   // scroll drift (whole assembly)
+  const breathRef = useRef<THREE.Group>(null);  // idle breathing
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const texture = useTexture(url);
   const gl = useThree((s) => s.gl);
@@ -114,10 +142,13 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     sharpenTexture(texture, gl);
   }, [texture, gl]);
 
+  // REAL aspect ratio → the photo fills its frame, no stretching, no crop
   const aspect = useMemo(() => {
     const img = texture.image as HTMLImageElement | undefined;
     return img && img.width && img.height ? img.width / img.height : 3 / 2;
   }, [texture]);
+
+  const photoH = width / aspect;
 
   const uniforms = useMemo(
     () => ({
@@ -131,17 +162,19 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
   );
 
   useFrame(({ camera, clock }) => {
-    const mesh = meshRef.current;
+    const drift = driftRef.current;
+    const breath = breathRef.current;
     const mat = matRef.current;
-    if (!mesh || !mat) return;
+    if (!drift || !breath || !mat) return;
 
     const t = useAppStore.getState().scrollProgress;
     const time = clock.getElapsedTime();
 
     // A11Y: reduced motion — frames are static, sharp, no iris choreography.
     if (prefersReducedMotion) {
-      mesh.position.set(position[0], position[1], position[2]);
-      mesh.rotation.set(0, rotY, 0);
+      drift.position.set(position[0], position[1], position[2]);
+      drift.rotation.set(0, rotY, 0);
+      breath.position.z = 0;
       mat.uniforms.uProgress.value = 1;
       mat.uniforms.uIris.value = 1;
       mat.uniforms.uTime.value = 0;
@@ -149,7 +182,7 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     }
 
     // Distance from the viewer camera to this photo drives the approach.
-    const dist = camera.position.distanceTo(mesh.position as THREE.Vector3);
+    const dist = camera.position.distanceTo(drift.position as THREE.Vector3);
     const approach = 1 - THREE.MathUtils.smoothstep(dist, 4.0, 13.0);
 
     // DRIFT CHOREOGRAPHY (scroll-synced): the resting pose per seed drifts —
@@ -160,24 +193,41 @@ export default function IrisPhoto({ url, position, rotY, width, seed, clickT }: 
     const tilt = rotY + Math.sin(seed * 0.37 + t * 8.0) * 0.22 * (1 - settle);
     const roll = Math.cos(seed * 0.53 + t * 6.0) * 0.06 * (1 - settle);
 
-    mesh.position.x = position[0] + sway;
-    mesh.position.y = position[1] + rise;
-    mesh.rotation.y = tilt;
-    mesh.rotation.z = roll;
+    drift.position.x = position[0] + sway;
+    drift.position.y = position[1] + rise;
+    drift.rotation.y = tilt;
+    drift.rotation.z = roll;
+    breath.position.z = Math.sin(time * 0.6 + seed) * 0.012;
 
-    // uProgress: the rack-focus. 0 until clickT, then eases over ~0.028 t.
-    // (The DSLR's shutter reads the same threshold — sync is absolute.)
+    // ── THE CLICK SYNC: both the rack-focus AND the iris are pure functions
+    // of (t − clickT) — the exact moment the DSLR's shutter fires.
     const clickDelta = t - clickT;
-    const raw = THREE.MathUtils.clamp(clickDelta / 0.028, 0, 1);
+    const raw = THREE.MathUtils.clamp(clickDelta / PHOTO_SHARPEN, 0, 1);
     mat.uniforms.uProgress.value = raw * raw * (3 - 2 * raw);
-    mat.uniforms.uIris.value = THREE.MathUtils.clamp(clickDelta / 0.045, 0, 1);
+    const rawIris = THREE.MathUtils.clamp(clickDelta / PHOTO_IRIS, 0, 1);
+    mat.uniforms.uIris.value = rawIris * rawIris * (3 - 2 * rawIris);
     mat.uniforms.uTime.value = time;
   });
 
   return (
-    <mesh ref={meshRef} position={position} rotation={[0, rotY, 0]} scale={[width, width / aspect, 1]}>
-      <planeGeometry args={[1, 1, 1, 1]} />
-      <shaderMaterial ref={matRef} vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={uniforms} />
-    </mesh>
+    <group ref={driftRef} position={position} rotation={[0, rotY, 0]}>
+      <group ref={breathRef}>
+        {/* the photo — fills its plane at the image's true aspect */}
+        <mesh scale={[width, photoH, 1]}>
+          <planeGeometry args={[1, 1]} />
+          <shaderMaterial ref={matRef} vertexShader={vertexShader} fragmentShader={fragmentShader} uniforms={uniforms} />
+        </mesh>
+        {/* dark matte, just behind the print */}
+        <mesh position={[0, 0, -0.02]} scale={[width + MAT * 2, photoH + MAT * 2, 1]}>
+          <planeGeometry args={[1, 1]} />
+          <meshStandardMaterial color="#0c0c0d" metalness={0.6} roughness={0.4} />
+        </mesh>
+        {/* champagne-gold rim behind the matte */}
+        <mesh position={[0, 0, -0.035]} scale={[width + RIM * 2, photoH + RIM * 2, 1]}>
+          <planeGeometry args={[1, 1]} />
+          <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.35} />
+        </mesh>
+      </group>
+    </group>
   );
 }

@@ -59,7 +59,7 @@ const IMAGES = [
   '/gallery/webp/wedding-entertainment-1.webp',
   '/gallery/webp/moment-1.webp',
   '/gallery/webp/moment-2.webp',
-  '/gallery/webp/wedding.webp',
+  '/gallery/wedding-1.jpg', // high-res (1600²) — the 406px wedding.webp read permanently soft
 ];
 
 // Nearest-t lookup: sample the curve densely once, find the parameter whose

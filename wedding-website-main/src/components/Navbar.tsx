@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { getLenisInstance, focusSection, usePrefersReducedMotion, useAppStore } from '../store';
+import { getLenisInstance, focusSection } from '../store';
 import './Navbar.css';
 
 import AnimatedLogo from './AnimatedLogo';
@@ -19,8 +18,6 @@ export default function Navbar() {
   const [active, setActive] = useState('home');
   const navigate = useNavigate();
   const location = useLocation();
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const setPrefersReducedMotion = useAppStore((s) => s.setPrefersReducedMotion);
 
   useEffect(() => {
     // NAVBAR: background turns soft ivory + subtle shadow after the user scrolls
@@ -124,19 +121,6 @@ export default function Navbar() {
             {link.label}
           </a>
         ))}
-
-        {/* A11Y: motion preference toggle — the same switch as the OS setting,
-            reachable in two clicks for anyone who finds the animation too much. */}
-        <motion.button
-          type="button"
-          className="navbar-motion-toggle"
-          onClick={() => setPrefersReducedMotion(!prefersReducedMotion)}
-          whileTap={prefersReducedMotion ? undefined : { scale: 0.92 }}
-          aria-pressed={prefersReducedMotion}
-          title={prefersReducedMotion ? 'Motion: reduced — click to enable' : 'Motion: full — click to reduce'}
-        >
-          {prefersReducedMotion ? 'Motion off' : 'Motion on'}
-        </motion.button>
       </nav>
     </header>
   );

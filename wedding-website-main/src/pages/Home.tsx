@@ -55,13 +55,16 @@ export default function Home() {
     // disabled when the user prefers reduced motion so native instant scrolling
     // returns and scroll-jacking never fights assistive tech.
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 1.35,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: !prefersReducedMotion,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
+      // SCROLL PACING: slightly gentler wheel response — the corridor flight
+      // and photo reveals read better when one wheel notch travels a little
+      // less page. (Home page only; other routes use native scrolling.)
+      wheelMultiplier: 0.82,
+      touchMultiplier: 1.7,
     });
 
     // NAVBAR: share the instance so nav links can smooth-scroll to sections

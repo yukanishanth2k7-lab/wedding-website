@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../store';
-import { corridorCurve, CORRIDOR_PHOTOS } from './corridorPath';
+import { corridorCurve, CORRIDOR_PHOTOS, PHOTO_IRIS } from './corridorPath';
 
 /* ═══════════════════════════════════════════════════════════════
    THE WORKING DSLR — one realistic camera (metal body, glass lens,
@@ -49,31 +49,52 @@ export default function DslrCamera() {
     const t = useAppStore.getState().scrollProgress;
     const time = clock.getElapsedTime();
 
-    // ── PATH: the DSLR leads the viewer by a fixed breath of scroll, flying a
+    // ── PATH: the DSLR leads the viewer by a breath of scroll, flying a
     // PARALLEL OFFSET path (up and right of the corridor) so it works the frames
     // beside the viewer's sightline — visible at mid-distance, never blocking.
-    const lead = 0.07;
+    // STAGING: at the very start it works DEEPER down the corridor, close to
+    // the centerline (a small figure ahead, not a photobomb at the lens);
+    // it swings out to its full working offset as the journey gets going.
+    const startOut = THREE.MathUtils.smoothstep(t, 0, 0.12);
+    const lead = 0.12 - startOut * 0.05;
+    const lat = 0.55 + startOut * 1.15;
     const dslrT = Math.min(t + lead, 1);
     corridorCurve.getPointAt(dslrT, tmp.pos);
-    g.position.set(tmp.pos.x + 1.7, tmp.pos.y + 0.85, tmp.pos.z);
+    g.position.set(tmp.pos.x + lat, tmp.pos.y + 0.85, tmp.pos.z);
     // bob like it's being carried — handheld weight, never robotic
     if (!prefersReducedMotion) {
       g.position.y += Math.sin(time * 0.9) * 0.05;
       g.position.x += Math.cos(time * 0.7) * 0.03;
     }
 
-    // ── AIM: face the next photo to be clicked (the first with clickT > dslrT).
-    // The wrap-around case (past the last photo) aims down-corridor.
-    const next = CORRIDOR_PHOTOS.find((p) => p.clickT > dslrT) ?? CORRIDOR_PHOTOS[CORRIDOR_PHOTOS.length - 1];
+    // ── AIM: the photo currently being worked — the one whose click window
+    // (a beat before its clickT, through its full iris reveal) contains the
+    // scroll. KEY FIX: the camera used to jump to the NEXT photo the instant
+    // one fired, so the shutter read as pressed on the wrong frame. Now the
+    // aim (and therefore the shutter) stays locked on a photo through its
+    // whole click window — every photo gets its own click, none get skipped.
+    let next = CORRIDOR_PHOTOS[CORRIDOR_PHOTOS.length - 1];
+    let best = Infinity;
+    for (const p of CORRIDOR_PHOTOS) {
+      const dt = p.clickT - dslrT;
+      if (dt >= -PHOTO_IRIS && dt < best) {
+        best = dt;
+        next = p;
+      }
+    }
     tmp.aim.set(next.x, next.y, next.z);
     tmp.m.lookAt(tmp.aim, tmp.pos, tmp.up);
     tmp.q.setFromRotationMatrix(tmp.m);
     // Smooth the yaw/pitch toward the aim (weighted, never snappy)
     inn.quaternion.slerp(tmp.q, prefersReducedMotion ? 1 : 0.09);
 
-    // ── SHUTTER: pressed exactly at the target photo's clickT.
+    // ── SHUTTER: presses in just before the photo's clickT and HOLDS through
+    // the full iris reveal (the photographer keeps the button down while the
+    // frame develops), then releases. Pure function of t — scrub-safe.
     const shutterT = next.clickT;
-    const press = THREE.MathUtils.smoothstep(t, shutterT - 0.012, shutterT + 0.006);
+    const pressIn = THREE.MathUtils.smoothstep(t, shutterT - 0.014, shutterT);
+    const release = 1 - THREE.MathUtils.smoothstep(t, shutterT + PHOTO_IRIS, shutterT + PHOTO_IRIS + 0.02);
+    const press = pressIn * release;
     if (shutterBtn.current) {
       shutterBtn.current.position.y = 0.315 - press * 0.02;
     }

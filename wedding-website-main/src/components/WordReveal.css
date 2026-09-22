@@ -91,16 +91,34 @@
   background-image: linear-gradient(178deg, #fdf7ea 8%, #f0e2bb 38%, #e0be55 68%, #c49b4e 100%);
 }
 
+/* The statement's backlight — reshaped from the old visible circle into
+   shapeless lobed fog: three uneven radial wells with edgeless falloff, no
+   border-radius, no geometry. It breathes (slow morph) as the reveal runs;
+   its intensity is still scroll-driven from the component. */
 .word-reveal-glow {
   position: sticky;
-  top: 25vh;
+  top: 18vh;
   margin: 0 auto;
-  width: min(60vw, 640px);
-  height: min(60vw, 640px);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.5) 0%, rgba(212, 175, 55, 0) 62%);
-  filter: blur(30px);
+  width: min(78vw, 860px);
+  height: min(72vw, 780px);
+  background:
+    radial-gradient(42% 46% at 62% 34%, rgba(212, 175, 55, 0.42) 0%, rgba(212, 175, 55, 0) 72%),
+    radial-gradient(55% 48% at 30% 62%, rgba(212, 175, 55, 0.20) 0%, rgba(212, 175, 55, 0) 74%),
+    radial-gradient(34% 30% at 52% 82%, rgba(244, 226, 184, 0.14) 0%, rgba(244, 226, 184, 0) 78%);
+  filter: blur(38px);
   pointer-events: none;
+  animation: reveal-fog-morph 22s ease-in-out infinite alternate;
+}
+
+@keyframes reveal-fog-morph {
+  from { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  to { transform: translate3d(2.5%, -2%, 0) scale(1.08) rotate(-3deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word-reveal-glow {
+    animation: none;
+  }
 }
 
 /* SOFT GLOW / BACKLIGHT: a second, tighter halo that rides behind the text

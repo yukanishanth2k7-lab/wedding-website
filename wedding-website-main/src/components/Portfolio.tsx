@@ -14,21 +14,23 @@ interface PortfolioImage {
 }
 
 const IMAGES: PortfolioImage[] = [
-  { src: '/gallery/webp/wedding-1.webp', category: 'photography', label: 'Wedding Photography' },
-  { src: '/gallery/webp/wedding-2.webp', category: 'photography', label: 'Wedding Photography' },
-  { src: '/gallery/webp/about-form.webp', category: 'photography', label: 'Couples' },
-  { src: '/gallery/webp/contact-img.webp', category: 'photography', label: 'Portraits' },
-  { src: '/gallery/webp/decor-2.webp', category: 'photography', label: 'Decor' },
-  { src: '/gallery/webp/decor-3.webp', category: 'photography', label: 'Decor' },
-  { src: '/gallery/webp/decor-4.webp', category: 'photography', label: 'Decor' },
-  { src: '/gallery/webp/decor-5.webp', category: 'photography', label: 'Decor' },
-  { src: '/gallery/webp/decor-6.webp', category: 'cinematography', label: 'Highlights' },
-  { src: '/gallery/webp/decor-7.webp', category: 'cinematography', label: 'Highlights' },
-  { src: '/gallery/webp/wedding-entertainment.webp', category: 'cinematography', label: 'Entertainment' },
-  { src: '/gallery/webp/wedding-entertainment-1.webp', category: 'cinematography', label: 'Entertainment' },
-  { src: '/gallery/webp/moment-1.webp', category: 'cinematography', label: 'Moments' },
-  { src: '/gallery/webp/moment-2.webp', category: 'cinematography', label: 'Moments' },
-  { src: '/gallery/webp/wedding.webp', category: 'photography', label: 'Wedding Photography' },
+  // FULL-QUALITY originals (same set as the 3D corridor) — the lightbox shows
+  // the source-resolution JPGs, not the lossy webp thumbnails.
+  { src: '/gallery/wedding-1.jpg', category: 'photography', label: 'Wedding Photography' },
+  { src: '/gallery/wedding-2.jpg', category: 'photography', label: 'Wedding Photography' },
+  { src: '/gallery/about-form.jpg', category: 'photography', label: 'Couples' },
+  { src: '/gallery/contact-img.jpg', category: 'photography', label: 'Portraits' },
+  { src: '/gallery/decor-2.jpg', category: 'photography', label: 'Decor' },
+  { src: '/gallery/decor-3.jpg', category: 'photography', label: 'Decor' },
+  { src: '/gallery/decor-4.jpg', category: 'photography', label: 'Decor' },
+  { src: '/gallery/decor-5.jpg', category: 'photography', label: 'Decor' },
+  { src: '/gallery/decor-6.jpg', category: 'cinematography', label: 'Highlights' },
+  { src: '/gallery/decor-7.jpg', category: 'cinematography', label: 'Highlights' },
+  { src: '/gallery/wedding-entertainment.jpg', category: 'cinematography', label: 'Entertainment' },
+  { src: '/gallery/wedding-entertainment-1.jpg', category: 'cinematography', label: 'Entertainment' },
+  { src: '/gallery/moment-1.jpg', category: 'cinematography', label: 'Moments' },
+  { src: '/gallery/moment-2.jpg', category: 'cinematography', label: 'Moments' },
+  { src: '/gallery/wedding.jpg', category: 'photography', label: 'Wedding Photography' },
 ];
 
 const FILTERS: Array<{ key: Category | 'all'; label: string }> = [

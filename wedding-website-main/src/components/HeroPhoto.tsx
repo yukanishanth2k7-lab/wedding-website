@@ -80,7 +80,7 @@ const OVERSCAN = 1.15;   // cover plus margin for pointer parallax
 export default function HeroPhoto() {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.ShaderMaterial>(null);
-  const texture = useTexture('/gallery/webp/contact-img.webp');
+  const texture = useTexture('/gallery/contact-img.jpg'); // full-quality original — the hero must be tack sharp
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const prefersReducedMotion = useAppStore((s) => s.prefersReducedMotion);

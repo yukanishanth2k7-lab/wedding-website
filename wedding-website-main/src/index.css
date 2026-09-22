@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,350;0,9..144,400;0,9..144,500;1,9..144,350;1,9..144,400&family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400;1,500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,350;0,9..144,400;0,9..144,500;1,9..144,350;1,9..144,400&family=Inter:wght@300;400;500&family=Luxurious+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
 
 /* THEME: charcoal/near-black stage + champagne-gold accent (camera-narrator spec).
    Variable names kept so usage sites don't change; values swapped. */
@@ -12,7 +12,9 @@
   --color-white: #ffffff;
 
   --font-heading: 'Cinzel', serif;
-  --font-script: 'Playfair Display', serif;
+  /* Luxurious Script (Rob Leuschke / TypeSETit) — decorative calligraphic script.
+     DISPLAY ONLY (logo/hero/footer signature): at small sizes a script is unreadable. */
+  --font-script: 'Luxurious Script', 'Cormorant Garamond', cursive;
   --font-body: 'Inter', sans-serif;
 }
 

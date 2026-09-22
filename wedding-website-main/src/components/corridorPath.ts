@@ -45,21 +45,23 @@ export interface CorridorPhoto {
 }
 
 const IMAGES = [
-  '/gallery/webp/wedding-1.webp',
-  '/gallery/webp/wedding-2.webp',
-  '/gallery/webp/about-form.webp',
-  '/gallery/webp/contact-img.webp',
-  '/gallery/webp/decor-2.webp',
-  '/gallery/webp/decor-3.webp',
-  '/gallery/webp/decor-4.webp',
-  '/gallery/webp/decor-5.webp',
-  '/gallery/webp/decor-6.webp',
-  '/gallery/webp/decor-7.webp',
-  '/gallery/webp/wedding-entertainment.webp',
-  '/gallery/webp/wedding-entertainment-1.webp',
-  '/gallery/webp/moment-1.webp',
-  '/gallery/webp/moment-2.webp',
-  '/gallery/wedding-1.jpg', // high-res (1600²) — the 406px wedding.webp read permanently soft
+  // FULL-QUALITY SOURCES: the original high-res JPGs (luxeweddings.in
+  // originals, already in /public/gallery) instead of the lossy webp
+  // conversions — after the flash the photo must be genuinely sharp.
+  '/gallery/wedding-1.jpg',
+  '/gallery/wedding-2.jpg',
+  '/gallery/about-form.jpg',
+  '/gallery/contact-img.jpg',
+  '/gallery/decor-2.jpg',
+  '/gallery/decor-3.jpg',
+  '/gallery/decor-4.jpg',
+  '/gallery/decor-5.jpg',
+  '/gallery/decor-6.jpg',
+  '/gallery/decor-7.jpg',
+  '/gallery/wedding-entertainment.jpg',
+  '/gallery/wedding-entertainment-1.jpg',
+  '/gallery/moment-1.jpg',
+  '/gallery/moment-2.jpg',
 ];
 
 // Nearest-t lookup: sample the curve densely once, find the parameter whose

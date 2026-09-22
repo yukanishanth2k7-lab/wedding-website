@@ -65,18 +65,35 @@
     linear-gradient(0deg, rgba(10, 10, 12, 0.6) 0%, rgba(10, 10, 12, 0) 35%);
 }
 
-/* Soft light glow — large radial gold bloom above the canvas for extra atmosphere */
+/* Atmospheric gold fog — replaces the old circular glow. Three uneven radial
+   lobes with edgeless falloff: NO border-radius, no recognizable geometry —
+   just light hanging in the air like studio haze. A very slow drift keeps it
+   alive without ever reading as a shape. (A11Y: disabled under reduced motion.) */
 .hero-glow {
   position: absolute;
   z-index: 2;
-  top: -20%;
-  right: -10%;
-  width: 60vw;
-  height: 60vw;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.32) 0%, rgba(212, 175, 55, 0) 62%);
-  filter: blur(40px);
+  top: -18%;
+  right: -12%;
+  width: 72vw;
+  height: 85vh;
+  background:
+    radial-gradient(38% 44% at 66% 30%, rgba(212, 175, 55, 0.30) 0%, rgba(212, 175, 55, 0) 72%),
+    radial-gradient(52% 42% at 28% 58%, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0) 74%),
+    radial-gradient(30% 32% at 56% 78%, rgba(244, 226, 184, 0.11) 0%, rgba(244, 226, 184, 0) 78%);
+  filter: blur(46px);
   pointer-events: none;
+  animation: hero-fog-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes hero-fog-drift {
+  from { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  to { transform: translate3d(-3%, 2.5%, 0) scale(1.09) rotate(3.5deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow {
+    animation: none;
+  }
 }
 
 /* Floating golden particles — DOM mirror of the 3D dust, above the scrim */
@@ -119,13 +136,16 @@
 }
 
 .hero-title {
-  font-family: 'Playfair Display', serif;
-  font-weight: 600;
-  font-size: clamp(2.7rem, 5.6vw, 4.9rem);
-  line-height: 1.12;
-  letter-spacing: 0.015em;
-  color: #ffffff;
-  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
+  /* LUXURIOUS SCRIPT: the calligraphic signature face — display size only.
+     Script needs room for its swashes: larger size, relaxed line-height, and
+     a touch of gold-ivory warmth so it reads as ink, not UI. */
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 7.2vw, 6.4rem);
+  line-height: 1.18;
+  letter-spacing: 0.01em;
+  color: #f6efe2;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.55), 0 0 34px rgba(212, 175, 55, 0.14);
   margin: 0;
 }
 

@@ -102,6 +102,7 @@ export default function Navbar() {
         }}
       >
         <AnimatedLogo />
+        <span className="navbar-wordmark" aria-hidden="true">Venus Photo Studio</span>
       </a>
 
       {/* NAVBAR: links aligned top-right with equal spacing; gold underline hover;

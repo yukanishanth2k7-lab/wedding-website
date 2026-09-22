@@ -60,11 +60,12 @@ export default function Home() {
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: !prefersReducedMotion,
-      // SCROLL PACING: slightly gentler wheel response — the corridor flight
-      // and photo reveals read better when one wheel notch travels a little
-      // less page. (Home page only; other routes use native scrolling.)
-      wheelMultiplier: 0.82,
-      touchMultiplier: 1.7,
+      // SCROLL PACING: gentler wheel response — one wheel notch travels less
+      // page than native, so the corridor flight and photo reveals are easy to
+      // follow at a normal scrolling pace. (Home page only; other routes use
+      // native scrolling.)
+      wheelMultiplier: 0.65,
+      touchMultiplier: 1.4,
     });
 
     // NAVBAR: share the instance so nav links can smooth-scroll to sections

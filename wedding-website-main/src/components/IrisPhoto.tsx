@@ -98,7 +98,7 @@ const fragmentShader = /* glsl */ `
 
     // Pre-click state: a LIGHT, elegant defocus — clearly "not taken yet"
     // without turning the frame to mush — and barely-touched contrast.
-    float blurR = (1.0 - uSharp) * 0.0055;
+    float blurR = (1.0 - uSharp) * 0.0025;
     vec3 soft = blurred(uv, blurR);
     soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.92); // near-full contrast
     soft = grade(soft) * 0.97;

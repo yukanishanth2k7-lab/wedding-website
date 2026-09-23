@@ -84,7 +84,7 @@ const fragmentShader = /* glsl */ `
 
     // waiting state: LIGHT elegant defocus + barely-reduced contrast —
     // clearly "not taken yet" without reading as mush.
-    float blurR = (1.0 - uSharp) * 0.005;
+    float blurR = (1.0 - uSharp) * 0.0032;
     vec3 soft = blurred(uv, blurR);
     soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.92);
     soft = grade(soft) * 0.97;
@@ -109,13 +109,13 @@ const fragmentShader = /* glsl */ `
 // ── REST FRAMING ── the plane sits on the resting camera's view ray
 const REST_YAW = 0.15;
 const REST_X = -0.82;
-const FOCUS_V = 0.62;  // image line (uv, from bottom) held mid-screen — the faces
+const FOCUS_V = 0.60;  // image line (uv, from bottom) held mid-screen — the couple
 const OVERSCAN = 1.15;
 
 export default function HeroPhoto() {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.ShaderMaterial>(null);
-  const texture = useTexture('/gallery/contact-img.jpg'); // full-quality original
+  const texture = useTexture('/gallery/wedding-2.jpg'); // 4th luxeweddings gallery frame, full-quality original
   const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const prefersReducedMotion = useAppStore((s) => s.prefersReducedMotion);
@@ -134,7 +134,7 @@ export default function HeroPhoto() {
     const frustumH = 2 * camDist * Math.tan(fov / 2);
     const frustumW = frustumH * (size.width / size.height);
     const img = texture.image as HTMLImageElement | undefined;
-    const aspect = img && img.width && img.height ? img.width / img.height : 0.8; // 1280×1600 fallback
+    const aspect = img && img.width && img.height ? img.width / img.height : 0.667; // wedding-2: 1200×1800
     let w: number, h: number;
     if (frustumW / frustumH > aspect) {
       w = frustumW * OVERSCAN;

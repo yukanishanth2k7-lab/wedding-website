@@ -111,12 +111,16 @@ export const CORRIDOR_PHOTOS: CorridorPhoto[] = (() => {
     return { url, x, y, z, width, rotY, seed: 17 + i * 29, approachT, clickT: 0 };
   });
 
-  // retime: walk the photos in approach order, pushing clicks apart
+  // retime: walk the photos in approach order, pushing clicks apart.
+  // Each click leads its photo's closest approach by a FULL section-beat
+  // (0.055 t-units): the DSLR shoots frames while they're still mid-
+  // distance, so by the time a photo is well on screen it has almost
+  // always been taken — the journey reads sharp-first, not blur-first.
   const byApproach = [...photos].sort((a, b) => a.approachT - b.approachT);
   let prev = -Infinity;
   for (const p of byApproach) {
     p.clickT = THREE.MathUtils.clamp(
-      Math.max(p.approachT - 0.015, prev + MIN_CLICK_GAP, FIRST_CLICK),
+      Math.max(p.approachT - 0.055, prev + MIN_CLICK_GAP, FIRST_CLICK),
       FIRST_CLICK,
       LAST_CLICK
     );

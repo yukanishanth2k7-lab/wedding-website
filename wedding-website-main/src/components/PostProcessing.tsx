@@ -1,4 +1,4 @@
-import { EffectComposer, Bloom, DepthOfField, Vignette, Noise } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
 import { useAppStore, usePrefersReducedMotion } from '../store';
 
 export default function PostProcessing() {
@@ -15,20 +15,13 @@ export default function PostProcessing() {
     );
   }
 
-  // FIX (blur): anything soft-focus by default reads as blur, not cinema. The DoF
-  // is tuned so TAKEN photos stay crisp: focusDistance pins the focal plane at the
-  // corridor photos' typical distance (~7 world units ≈ 0.107 normalized), with a
-  // wide focalLength so most of the journey sits inside the in-focus zone. Bloom
-  // only catches true speculars; vignette/noise stay subtle film texture.
-
+  // FIX (final): the DepthOfField pass is REMOVED entirely — every corridor
+  // photo runs its own in-shader focus story (blurred → flash → crystal
+  // clear), and a screen-space DoF re-softens the very photos the reveal
+  // just sharpened. What remains: bloom for the flash/speculars only,
+  // vignette + noise as quiet film texture. Pure-HD end state, always.
   return (
     <EffectComposer multisampling={4}>
-      <DepthOfField
-        focusDistance={0.107}
-        focalLength={0.28}
-        bokehScale={1.2}
-        height={480}
-      />
       <Bloom
         luminanceThreshold={0.78}
         luminanceSmoothing={0.2}

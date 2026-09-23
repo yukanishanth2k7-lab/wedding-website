@@ -66,6 +66,14 @@ export default function Home() {
       // native scrolling.)
       wheelMultiplier: 0.65,
       touchMultiplier: 1.4,
+      // FIX (scroll clamp): with wrapper=window Lenis defaults to observing
+      // <html> for content growth — but html/body here have zero-height boxes
+      // (every child is fixed/absolute), so that observer NEVER fires and the
+      // cached scroll limit goes stale: wheel scrolling hard-stops before the
+      // footer ("can't scroll beyond This could be your frame"). Point content
+      // at .scroll-container, whose box genuinely grows with its content, so
+      // Lenis re-measures the limit as images/fonts settle.
+      content: scrollContainerRef.current ?? undefined,
     });
 
     // NAVBAR: share the instance so nav links can smooth-scroll to sections
@@ -97,7 +105,13 @@ export default function Home() {
     let refreshTimer = 0;
     const ro = new ResizeObserver(() => {
       window.clearTimeout(refreshTimer);
-      refreshTimer = window.setTimeout(() => ScrollTrigger.refresh(), 150);
+      refreshTimer = window.setTimeout(() => {
+        // Same fix, belt-and-suspenders: force Lenis to re-read the scroll
+        // limit whenever the content changes size (ScrollTrigger.refresh()
+        // alone doesn't update Lenis's cached limit).
+        lenis.resize();
+        ScrollTrigger.refresh();
+      }, 150);
     });
     if (container) ro.observe(container);
 

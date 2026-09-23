@@ -12,9 +12,10 @@
   --color-white: #ffffff;
 
   --font-heading: 'Cinzel', serif;
-  /* Luxurious Script (Rob Leuschke / TypeSETit) — the calligraphic script.
-     Used ONLY for the "One camera…" statement; token kept for that single use. */
-  --font-script: 'Luxurious Script', 'Cormorant Garamond', cursive;
+  /* ORIGINAL FONT RESTORED — 'script-text' headings use Playfair Display
+     (as before). Luxurious Script is hardcoded in WordReveal.css ONLY, for
+     the "One camera…" statement — everywhere else uses the original faces. */
+  --font-script: 'Playfair Display', serif;
   --font-body: 'Inter', sans-serif;
 }
 

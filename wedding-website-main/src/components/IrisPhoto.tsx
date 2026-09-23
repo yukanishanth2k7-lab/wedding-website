@@ -96,15 +96,17 @@ const fragmentShader = /* glsl */ `
   void main() {
     vec2 uv = vUv;
 
-    // Pre-click state: heavy defocus (≈22px class on a full-bleed render) and
-    // slightly reduced contrast — fully visible, unmistakably "not taken yet".
-    float blurR = (1.0 - uSharp) * 0.013;
+    // Pre-click state: a LIGHT, elegant defocus — clearly "not taken yet"
+    // without turning the frame to mush — and barely-touched contrast.
+    float blurR = (1.0 - uSharp) * 0.0055;
     vec3 soft = blurred(uv, blurR);
-    soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.82); // flat contrast
-    soft = grade(soft) * 0.96;
+    soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.92); // near-full contrast
+    soft = grade(soft) * 0.97;
 
     vec3 sharp = grade(texture2D(uTexture, uv).rgb);
-    sharp = hdDetail(uv, sharp, uHd * 0.9);
+    // Perceptual crispness: a small PERMANENT unsharp so fabric/jewelry edges
+    // always read tack-sharp, plus the stronger pulse that rides the reveal.
+    sharp = hdDetail(uv, sharp, 0.28 + uHd * 0.55);
 
     // THE TRANSITION IS THE FLASH: uSharp crosses in a single frame, so this
     // mix snaps soft→sharp at the burst peak. No crossfade, no wipe.

@@ -82,14 +82,15 @@ const fragmentShader = /* glsl */ `
   void main() {
     vec2 uv = vUv;
 
-    // waiting state: heavy defocus + slightly reduced contrast, fully visible
-    float blurR = (1.0 - uSharp) * 0.013;
+    // waiting state: LIGHT elegant defocus + barely-reduced contrast —
+    // clearly "not taken yet" without reading as mush.
+    float blurR = (1.0 - uSharp) * 0.005;
     vec3 soft = blurred(uv, blurR);
-    soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.82);
-    soft = grade(soft) * 0.96;
+    soft = mix(vec3(dot(soft, vec3(0.299, 0.587, 0.114))), soft, 0.92);
+    soft = grade(soft) * 0.97;
 
     vec3 sharp = grade(texture2D(uTexture, uv).rgb);
-    sharp = hdDetail(uv, sharp, uHd * 0.9);
+    sharp = hdDetail(uv, sharp, 0.28 + uHd * 0.55);
 
     // THE FLASH IS THE TRANSITION: uSharp snaps 0→1 at the burst peak.
     vec3 color = mix(soft, sharp, uSharp);

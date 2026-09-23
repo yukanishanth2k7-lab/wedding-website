@@ -15,23 +15,24 @@ export default function PostProcessing() {
     );
   }
 
-  // FIX (blur): anything soft-focus by default reads as blur, not cinema — so bokeh
-  // scale drops 4 -> 1.4 and bloom intensity drops 1.2 -> 0.35 with a higher threshold
-  // so only true speculars glow. Vignette lightened 1.2 -> 0.85 and noise halved to keep
-  // film texture without milking the blacks.
+  // FIX (blur): anything soft-focus by default reads as blur, not cinema. The DoF
+  // is tuned so TAKEN photos stay crisp: focusDistance pins the focal plane at the
+  // corridor photos' typical distance (~7 world units ≈ 0.107 normalized), with a
+  // wide focalLength so most of the journey sits inside the in-focus zone. Bloom
+  // only catches true speculars; vignette/noise stay subtle film texture.
 
   return (
     <EffectComposer multisampling={4}>
       <DepthOfField
-        focusDistance={0.015}
-        focalLength={0.05} // tighter falloff so the subject stays crisp and only far edges soften
-        bokehScale={1.4}
+        focusDistance={0.107}
+        focalLength={0.28}
+        bokehScale={1.2}
         height={480}
       />
       <Bloom
-        luminanceThreshold={0.75} // was 0.5 — only real highlights glow now
+        luminanceThreshold={0.78}
         luminanceSmoothing={0.2}
-        intensity={0.35}
+        intensity={0.3}
         mipmapBlur
       />
       <Vignette eskil={false} offset={0.15} darkness={0.85} />
